@@ -1,0 +1,7 @@
+# Dependencies used by grid_simulator/GridEnv.py.
+# These versions stay compatible with Explore-Bench's older Gym/Matplotlib code.
+numpy>=1.21,<1.24
+Pillow>=8,<11
+matplotlib>=3.3,<3.6
+gym==0.26.2
+PyQt5>=5.15,<5.16

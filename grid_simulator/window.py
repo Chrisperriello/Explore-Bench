@@ -1,8 +1,15 @@
 import sys
+import os
 import numpy as np
 
 # Only ask users to install matplotlib if they actually need it
 try:
+    import matplotlib
+    if "MPLBACKEND" not in os.environ:
+        if os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY"):
+            matplotlib.use("Qt5Agg")
+        else:
+            matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 except:
     print('To display the environment in a window, please install matplotlib, eg:')
@@ -23,7 +30,11 @@ class Window:
         self.fig, self.ax = plt.subplots()
 
         # Show the env name in the window title
-        self.fig.canvas.set_window_title(title)
+        manager = getattr(self.fig.canvas, "manager", None)
+        if manager is not None and hasattr(manager, "set_window_title"):
+            manager.set_window_title(title)
+        elif hasattr(self.fig.canvas, "set_window_title"):
+            self.fig.canvas.set_window_title(title)
 
         # Turn off x/y axis numbering/ticks
         self.ax.xaxis.set_ticks_position('none')
