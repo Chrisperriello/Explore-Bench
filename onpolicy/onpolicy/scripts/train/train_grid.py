@@ -12,13 +12,23 @@ import torch
 from onpolicy.config import get_config
 
 from onpolicy.envs.GridEnv.GridEnv import GridEnv
+from onpolicy.envs.GridEnv.sensors import sensor_configs_from_values
 from onpolicy.envs.env_wrappers import InfoSubprocVecEnv, InfoDummyVecEnv, ChooseInfoSubprocVecEnv, ChooseInfoDummyVecEnv
 
 def make_train_env(all_args):
+    sensor_configs = sensor_configs_from_values(
+        all_args.sensor_types, all_args.sensor_ranges, all_args.num_agents, 3.0
+    )
     def get_env_fn(rank):
         def init_env():
             if all_args.env_name == "GridEnv":
-                env = GridEnv(0.1, 3, all_args.num_agents, 100)
+                env = GridEnv(
+                    0.1,
+                    3,
+                    all_args.num_agents,
+                    100,
+                    sensor_configs=sensor_configs,
+                )
             else:
                 print("Can not support the " +
                       all_args.env_name + "environment.")
@@ -33,10 +43,20 @@ def make_train_env(all_args):
 
 
 def make_eval_env(all_args):
+    sensor_configs = sensor_configs_from_values(
+        all_args.sensor_types, all_args.sensor_ranges, all_args.num_agents, 3.0
+    )
     def get_env_fn(rank):
         def init_env():
             if all_args.env_name == "GridEnv":
-                env = GridEnv(0.1, 3, all_args.num_agents, 100, visualization=True)
+                env = GridEnv(
+                    0.1,
+                    3,
+                    all_args.num_agents,
+                    100,
+                    visualization=True,
+                    sensor_configs=sensor_configs,
+                )
             else:
                 print("Can not support the " +
                       all_args.env_name + "environment.")
@@ -58,6 +78,11 @@ def parse_args(args, parser):
     parser.add_argument('--grid_size', type=int, default=19, help="map size")
     parser.add_argument('--agent_view_size', type=int, default=7, help="depth the agent can view")
     parser.add_argument('--max_steps', type=int, default=100, help="depth the agent can view")
+    parser.add_argument('--sensor_types', nargs='+', default=['omnidirectional'],
+                        choices=['omnidirectional', 'four_beam'],
+                        help="one sensor type or one type per agent")
+    parser.add_argument('--sensor_ranges', nargs='+', type=float, default=None,
+                        help="one maximum range or one range per agent; accepts inf")
     parser.add_argument('--local_step_num', type=int, default=3, help="local_goal_step")
     parser.add_argument("--use_same_location", action='store_true', default=False,
                         help="use merge information")

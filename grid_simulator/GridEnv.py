@@ -7,6 +7,16 @@ from window import Window
 import gym
 import sys
 from Astar import AStar
+from sensors import (
+    OMNIDIRECTIONAL,
+    OmnidirectionalSensor,
+    SensorConfig,
+    create_sensor,
+    normalize_sensor_configs,
+    normalize_yaw,
+    sensor_configs_from_values,
+    yaw_to_cardinal,
+)
 import random
 import os
 
@@ -19,7 +29,8 @@ class GridEnv(gym.Env):
         use_multiroom = False,
         use_time_penalty = False,
         use_single_reward = False,
-        visualization = False):
+        visualization = False,
+        sensor_configs = None):
 
         self.num_agents = num_agents
         self.map_name = map_name
@@ -29,6 +40,11 @@ class GridEnv(gym.Env):
         # self.inflation_map = obstacle_inflation(self.gt_map, 0.15, 0.05)
         self.resolution = resolution
         self.sensor_range = sensor_range
+        self.sensor_configs = normalize_sensor_configs(
+            sensor_configs, num_agents, sensor_range
+        )
+        self.sensors = [create_sensor(config) for config in self.sensor_configs]
+        self.latest_sensor_readings = [None for _ in range(num_agents)]
         self.pos_traj = []
         self.grid_traj = []
         self.map_per_frame = []
@@ -48,7 +64,11 @@ class GridEnv(gym.Env):
         self.resize_height = 64
 
         self.robot_discrete_dir = [i*math.pi for i in range(16)]
-        self.agent_view_size = int(sensor_range/self.resolution)
+        self.agent_view_size = (
+            math.inf
+            if math.isinf(sensor_range)
+            else int(sensor_range / self.resolution)
+        )
         self.target_ratio = 0.98
         self.merge_ratio = 0
         self.merge_reward = 0
@@ -113,6 +133,21 @@ class GridEnv(gym.Env):
 
         # self.visualize_map = np.zeros((self.width, self.height))
         self.visualize_goal = [[0,0] for i in range(self.num_agents)]
+
+    def _sense_agent(self, agent_id, position, yaw):
+        sensor_position = position
+        if self.sensor_configs[agent_id].sensor_type == OMNIDIRECTIONAL:
+            # Preserve the legacy grid -> continuous -> grid truncation behavior.
+            sensor_position = self.continuous_to_discrete(
+                self.discrete_to_continuous(position)
+            )
+        frame = self.sensors[agent_id].sense(
+            sensor_position, yaw, self.gt_map, self.resolution
+        )
+        self.latest_sensor_readings[agent_id] = self.sensors[
+            agent_id
+        ].public_reading(frame.measurement)
+        return frame
        
     def reset(self):
         # 1. read from blueprints files randomly
@@ -133,6 +168,7 @@ class GridEnv(gym.Env):
         # reset robot pos and dir
         self.agent_pos = [self.continuous_to_discrete([-8,8])]
         self.agent_dir = [0]
+        self.agent_yaw = [0.0]
 
         # for i in range(self.num_agents):
         #     random_at_obstacle_or_unknown = True
@@ -157,7 +193,8 @@ class GridEnv(gym.Env):
             self.previous_explored_each_map.append(np.zeros((self.width, self.height)))
 
         for i in range(self.num_agents):
-            _, map_this_frame, _, _ = self.optimized_build_map(self.discrete_to_continuous(self.agent_pos[i]), 0, self.gt_map, self.resolution, self.sensor_range)
+            frame = self._sense_agent(i, self.agent_pos[i], self.agent_yaw[i])
+            map_this_frame = frame.full_map
             # unknown: 205   free: 254   occupied: 0
             self.built_map.append(map_this_frame)
             obs.append(map_this_frame)
@@ -189,6 +226,8 @@ class GridEnv(gym.Env):
         info['obstacle_all_map'] = np.array(obstacle_all_map)
         info['obstacle_each_map'] = np.array(self.obstacle_each_map)
         info['agent_direction'] = np.array(self.agent_dir)
+        info['agent_yaw'] = np.array(self.agent_yaw)
+        info['sensor_readings'] = copy.deepcopy(self.latest_sensor_readings)
         # info['agent_local_map'] = self.agent_local_map
 
         info['merge_explored_ratio'] = self.merge_ratio
@@ -234,6 +273,7 @@ class GridEnv(gym.Env):
         # self.agent_dir = [0]
         self.agent_pos = [] # 7.2
         self.agent_dir = []
+        self.agent_yaw = []
 
         for i in range(self.num_agents):
             random_at_obstacle_or_unknown = True
@@ -242,8 +282,9 @@ class GridEnv(gym.Env):
                 y = random.randint(0, self.height - 1)
                 if self.gt_map[x][y] == 254:     # free space
                     self.agent_pos.append([x, y])
-                    # self.agent_dir.append(random.randint(0, 15)*math.pi)
-                    self.agent_dir.append(random.randint(0, 3))
+                    direction = random.randint(0, 3)
+                    self.agent_dir.append(direction)
+                    self.agent_yaw.append(direction * math.pi / 2.0)
                     random_at_obstacle_or_unknown = False
 
         # init local map
@@ -258,7 +299,8 @@ class GridEnv(gym.Env):
             self.previous_explored_each_map.append(np.zeros((self.width, self.height)))
 
         for i in range(self.num_agents):
-            _, map_this_frame, _, _ = self.optimized_build_map(self.discrete_to_continuous(self.agent_pos[i]), 0, self.gt_map, self.resolution, self.sensor_range)
+            frame = self._sense_agent(i, self.agent_pos[i], self.agent_yaw[i])
+            map_this_frame = frame.full_map
             # unknown: 205   free: 254   occupied: 0
             self.built_map.append(map_this_frame)
             obs.append(map_this_frame)
@@ -290,6 +332,8 @@ class GridEnv(gym.Env):
         info['obstacle_all_map'] = np.array(obstacle_all_map)
         info['obstacle_each_map'] = np.array(self.obstacle_each_map)
         info['agent_direction'] = np.array(self.agent_dir)
+        info['agent_yaw'] = np.array(self.agent_yaw)
+        info['sensor_readings'] = copy.deepcopy(self.latest_sensor_readings)
         # info['agent_local_map'] = self.agent_local_map
 
         info['merge_explored_ratio'] = self.merge_ratio
@@ -341,8 +385,8 @@ class GridEnv(gym.Env):
                     pose = self.naive_local_planner(global_plan)
                     self.path_log[0].extend(pose)
                     self.agent_pos[i] = pose[-1][0]
-                    # self.agent_dir[i] = pose[-1][1]
-                    self.agent_dir[i] = random.randint(0, 3)
+                    self.agent_yaw[i] = normalize_yaw(pose[-1][1])
+                    self.agent_dir[i] = yaw_to_cardinal(self.agent_yaw[i])
                     print("pose length: ", len(pose))
                     start = time.time()
                     self.build_map_given_path_for_multi_robot(pose, i)
@@ -404,6 +448,8 @@ class GridEnv(gym.Env):
         info['obstacle_all_map'] = np.array(obstacle_all_map)
         info['obstacle_each_map'] = np.array(self.obstacle_each_map)
         info['agent_direction'] = np.array(self.agent_dir)
+        info['agent_yaw'] = np.array(self.agent_yaw)
+        info['sensor_readings'] = copy.deepcopy(self.latest_sensor_readings)
         # info['agent_local_map'] = self.agent_local_map
         if self.use_time_penalty:
             info['agent_explored_reward'] = np.array(each_agent_rewards) * 0.02 - 0.01
@@ -654,65 +700,22 @@ class GridEnv(gym.Env):
         return mask_map, scale_map
 
     def optimized_build_map(self, pos, orn, gt_map, resolution, sensor_range):
-        '''
-        build map from a specific pos with a omni-directional scan
-        pos: [x, y]
-        '''
-        grid_range = int(sensor_range / resolution)
-        height = gt_map.shape[0]
-        width = gt_map.shape[1]
-        # init_map = np.zeros((width, height))
-        x, y = int(height/2+pos[0]/resolution), int(width/2+pos[1]/resolution)
-        x_min, y_min = max(0, x-grid_range), max(0, y-grid_range)
-        x_max, y_max = min(x+grid_range, height), min(y+grid_range, width)
-        # x, y = int(height/2+pos[0]/resolution-grid_range), int(width/2+pos[1]/resolution-grid_range) # relative to the upper left corner of the picture
-        init_map = gt_map[x_min:x_max, y_min:y_max]
-        mask_map = copy.deepcopy(init_map)
-        mask_map_origin = [x-x_min, y-y_min]
-
-        for j in range(mask_map.shape[1]):
-            laser_path = self.optimized_simulate_laser(0, j, init_map, mask_map_origin)
-            laser_path.reverse()
-            laser_path.append([0,j])
-            for idx, p in enumerate(laser_path[:-1]):
-                if (init_map[p[0],p[1]] == 0 and init_map[laser_path[idx+1][0], laser_path[idx+1][1]] > 0) or (init_map[p[0],p[1]] == 0 and init_map[laser_path[idx+1][0], laser_path[idx+1][1]] == 0 and p[1] != laser_path[idx+1][1]) or (init_map[p[0],p[1]] == 0 and p[1] == mask_map_origin[1] - 1) or (init_map[p[0],p[1]] == 0 and p[1] == mask_map_origin[1]):
-                    for pp in laser_path[idx+1:]:
-                        mask_map[pp[0],pp[1]] = 205
-                    break     
-        for j in range(mask_map.shape[1]):
-            laser_path = self.optimized_simulate_laser(mask_map.shape[0]-1, j, init_map, mask_map_origin)
-            laser_path.reverse()
-            laser_path.append([mask_map.shape[0]-1,j])
-            for idx, p in enumerate(laser_path[:-1]):
-                if (init_map[p[0],p[1]] == 0 and init_map[laser_path[idx+1][0], laser_path[idx+1][1]] > 0) or (init_map[p[0],p[1]] == 0 and init_map[laser_path[idx+1][0], laser_path[idx+1][1]] == 0 and p[1] != laser_path[idx+1][1]) or (init_map[p[0],p[1]] == 0 and p[1] == mask_map_origin[1] - 1) or (init_map[p[0],p[1]] == 0 and p[1] == mask_map_origin[1]):
-                    for pp in laser_path[idx+1:]:
-                        mask_map[pp[0],pp[1]] = 205
-                    break  
-        for i in range(mask_map.shape[0]):
-            laser_path = self.optimized_simulate_laser(i, 0, init_map, mask_map_origin)
-            laser_path.reverse()
-            laser_path.append([i,0])
-            for idx, p in enumerate(laser_path[:-1]):
-                if (init_map[p[0],p[1]] == 0 and init_map[laser_path[idx+1][0], laser_path[idx+1][1]] > 0) or (init_map[p[0],p[1]] == 0 and init_map[laser_path[idx+1][0], laser_path[idx+1][1]] == 0 and p[0] != laser_path[idx+1][0]) or (init_map[p[0],p[1]] == 0 and p[0] == mask_map_origin[0] - 1) or (init_map[p[0],p[1]] == 0 and p[0] == mask_map_origin[0]):
-                    for pp in laser_path[idx+1:]:
-                        mask_map[pp[0],pp[1]] = 205
-                    break      
-        for i in range(mask_map.shape[0]):
-            laser_path = self.optimized_simulate_laser(i, mask_map.shape[1]-1, init_map, mask_map_origin)
-            laser_path.reverse()
-            laser_path.append([i,mask_map.shape[1]-1])
-            for idx, p in enumerate(laser_path[:-1]):
-                if (init_map[p[0],p[1]] == 0 and init_map[laser_path[idx+1][0], laser_path[idx+1][1]] > 0) or (init_map[p[0],p[1]] == 0 and init_map[laser_path[idx+1][0], laser_path[idx+1][1]] == 0 and p[0] != laser_path[idx+1][0]) or (init_map[p[0],p[1]] == 0 and p[0] == mask_map_origin[0] - 1) or (init_map[p[0],p[1]] == 0 and p[0] == mask_map_origin[0]):
-                    for pp in laser_path[idx+1:]:
-                        mask_map[pp[0],pp[1]] = 205
-                    break
-        scale_map = np.zeros(gt_map.shape)
-        scale_map[:,:] = 205
-        scale_map[x_min:x_max, y_min:y_max] = mask_map
-        for w in range(3):
-            for h in range(3):
-                scale_map[x-1+w, y-1+h] = gt_map[x-1+w, y-1+h]
-        return mask_map, scale_map, (x_min, x_max), (y_min, y_max) 
+        """Compatibility wrapper for callers of the legacy 360 scanner."""
+        height, width = gt_map.shape
+        position = [
+            int(height / 2 + pos[0] / resolution),
+            int(width / 2 + pos[1] / resolution),
+        ]
+        sensor = OmnidirectionalSensor(
+            SensorConfig(max_range=sensor_range)
+        )
+        frame = sensor.sense(position, orn, gt_map, resolution)
+        return (
+            frame.local_map,
+            frame.full_map,
+            frame.x_bounds,
+            frame.y_bounds,
+        )
 
     def build_map(self, pos, orn, gt_map, resolution, sensor_range):
         grid_range = int(sensor_range / resolution)
@@ -804,55 +807,12 @@ class GridEnv(gym.Env):
                 laser_path.append([int(math.ceil(path_x[i])), int(math.ceil(path_y[i]))])
         return laser_path
 
-    def optimized_simulate_laser(self, i, j, mask_map, map_origin):
-        # left upper
-        if i + 0.5 - map_origin[0] < -1 and j + 0.5 - map_origin[1] < -1:
-            path = self.return_laser_path(i+1, j+1, mask_map, map_origin)
-        # left down
-        elif i + 0.5 - map_origin[0] > 1 and j + 0.5 - map_origin[1] < -1:
-            path = self.return_laser_path(i, j+1, mask_map, map_origin)
-        # right upper
-        elif i + 0.5 - map_origin[0] < -1 and j + 0.5 - map_origin[1] > 1:
-            path = self.return_laser_path(i+1, j, mask_map, map_origin)
-        # right down
-        elif i + 0.5 - map_origin[0] > 1 and j + 0.5 - map_origin[1] > 1:
-            path = self.return_laser_path(i, j, mask_map, map_origin)
-        elif i - map_origin[0] == -1 and j - map_origin[1] < -1:
-            path = self.return_laser_path(i, j+1, mask_map, map_origin)
-        elif i - map_origin[0] == -1 and j - map_origin[1] > 1:
-            path = self.return_laser_path(i, j, mask_map, map_origin)
-        elif i - map_origin[0] == 0 and j - map_origin[1] < -1:
-            path = self.return_laser_path(i+1, j+1, mask_map, map_origin)
-        elif i - map_origin[0] == 0 and j - map_origin[1] > 1:
-            path = self.return_laser_path(i+1, j, mask_map, map_origin)
-        elif i - map_origin[0] < -1 and j - map_origin[1] == -1:
-            path = self.return_laser_path(i+1, j, mask_map, map_origin)
-        elif i - map_origin[0] > 1 and j - map_origin[1] == -1:
-            path = self.return_laser_path(i, j, mask_map, map_origin)
-        elif i - map_origin[0] < -1 and j - map_origin[1] == 0:
-            path = self.return_laser_path(i+1, j+1, mask_map, map_origin)
-        elif i - map_origin[0] > 1 and j - map_origin[1] == 0:
-            path = self.return_laser_path(i, j+1, mask_map, map_origin)
-        return path
-    
-    def return_laser_path(self, i, j, map, map_origin):
-        '''
-        check whether [i, j] pixel is visible from the origin of map
-        '''
-        laser_path = []
-        step_length = max(abs(i - map_origin[0]),
-                        abs(j - map_origin[1]))
-        path_x = np.linspace(i, map_origin[0], int(step_length)+2)
-        path_y = np.linspace(j, map_origin[1], int(step_length)+2)
-        for i in range(1, int(step_length)+1):
-            # print(int(math.floor(path_x[i])))
-            # print(int(math.floor(path_y[i])))
-            laser_path.append([int(math.floor(path_x[i])), int(math.floor(path_y[i]))])
-        return laser_path
-
     def build_map_given_path(self, path):
         for pose in path:
-            _, map_this_frame, (x_min, x_max), (y_min, y_max) = self.optimized_build_map(self.discrete_to_continuous(pose[0]), 0, self.gt_map, self.resolution, self.sensor_range)  # can be modified to replace self.gt_map, self.resolution and self.sensor_range
+            frame = self._sense_agent(0, pose[0], pose[1])
+            map_this_frame = frame.full_map
+            x_min, x_max = frame.x_bounds
+            y_min, y_max = frame.y_bounds
             self.built_map = self.merge_two_map(self.built_map, map_this_frame, [x_min, x_max], [y_min, y_max])
         self.inflation_built_map = obstacle_inflation(self.built_map, 0.15, 0.05)
 
@@ -861,9 +821,17 @@ class GridEnv(gym.Env):
         #     _, map_this_frame, (x_min, x_max), (y_min, y_max) = self.optimized_build_map(self.discrete_to_continuous(pose[0]), 0, self.gt_map, self.resolution, self.sensor_range)  # can be modified to replace self.gt_map, self.resolution and self.sensor_range
         #     self.built_map[agent_id] = self.merge_two_map(self.built_map[agent_id], map_this_frame, [x_min, x_max], [y_min, y_max])
         for i in range(int(len(path)/3)):
-            _, map_this_frame, (x_min, x_max), (y_min, y_max) = self.optimized_build_map(self.discrete_to_continuous(path[i*3+1][0]), 0, self.gt_map, self.resolution, self.sensor_range)  # can be modified to replace self.gt_map, self.resolution and self.sensor_range
+            sampled_pose = path[i*3+1]
+            frame = self._sense_agent(agent_id, sampled_pose[0], sampled_pose[1])
+            map_this_frame = frame.full_map
+            x_min, x_max = frame.x_bounds
+            y_min, y_max = frame.y_bounds
             self.built_map[agent_id] = self.merge_two_map(self.built_map[agent_id], map_this_frame, [x_min, x_max], [y_min, y_max])
-        _, map_this_frame, (x_min, x_max), (y_min, y_max) = self.optimized_build_map(self.discrete_to_continuous(path[-1][0]), 0, self.gt_map, self.resolution, self.sensor_range)  # can be modified to replace self.gt_map, self.resolution and self.sensor_range
+        final_pose = path[-1]
+        frame = self._sense_agent(agent_id, final_pose[0], final_pose[1])
+        map_this_frame = frame.full_map
+        x_min, x_max = frame.x_bounds
+        y_min, y_max = frame.y_bounds
         self.built_map[agent_id] = self.merge_two_map(self.built_map[agent_id], map_this_frame, [x_min, x_max], [y_min, y_max])
         # self.inflation_built_map = obstacle_inflation(self.built_map, 0.15, 0.05)
 
@@ -1238,9 +1206,12 @@ class GridEnv(gym.Env):
                     self.path_log[i].append(self.agent_pos[i])
                     # import pdb; pdb.set_trace()
                     # self.agent_pos[i] = pose[-1][0]
-                    # self.agent_dir[i] = pose[-1][1]
-                    self.agent_dir[i] = random.randint(0, 3)
-                    _, map_this_frame, (x_min, x_max), (y_min, y_max) = self.optimized_build_map(self.discrete_to_continuous(self.agent_pos[i]), 0, self.gt_map, self.resolution, self.sensor_range)  # can be modified to replace self.gt_map, self.resolution and self.sensor_range
+                    self.agent_yaw[i] = normalize_yaw(pose[1][1])
+                    self.agent_dir[i] = yaw_to_cardinal(self.agent_yaw[i])
+                    frame = self._sense_agent(i, self.agent_pos[i], self.agent_yaw[i])
+                    map_this_frame = frame.full_map
+                    x_min, x_max = frame.x_bounds
+                    y_min, y_max = frame.y_bounds
                     self.built_map[i] = self.merge_two_map(self.built_map[i], map_this_frame, [x_min, x_max], [y_min, y_max])
                     # print("pose length: ", len(pose))
                     # start = time.time()
@@ -1519,9 +1490,12 @@ class GridEnv(gym.Env):
                     self.path_log[i].append(self.agent_pos[i])
                     # import pdb; pdb.set_trace()
                     # self.agent_pos[i] = pose[-1][0]
-                    # self.agent_dir[i] = pose[-1][1]
-                    self.agent_dir[i] = random.randint(0, 3)
-                    _, map_this_frame, (x_min, x_max), (y_min, y_max) = self.optimized_build_map(self.discrete_to_continuous(self.agent_pos[i]), 0, self.gt_map, self.resolution, self.sensor_range)  # can be modified to replace self.gt_map, self.resolution and self.sensor_range
+                    self.agent_yaw[i] = normalize_yaw(pose[1][1])
+                    self.agent_dir[i] = yaw_to_cardinal(self.agent_yaw[i])
+                    frame = self._sense_agent(i, self.agent_pos[i], self.agent_yaw[i])
+                    map_this_frame = frame.full_map
+                    x_min, x_max = frame.x_bounds
+                    y_min, y_max = frame.y_bounds
                     self.built_map[i] = self.merge_two_map(self.built_map[i], map_this_frame, [x_min, x_max], [y_min, y_max])
                     # print("pose length: ", len(pose))
                     # start = time.time()
@@ -1609,26 +1583,62 @@ def get_neighbor(x, y, radius, x_max, y_max):
                 neighbor_list.append([x+i,y+j])
     return neighbor_list
 
-def use_mmpf_to_explore(agent_num, map_name):
+def use_mmpf_to_explore(agent_num, map_name, sensor_configs=None):
     # window.show_img(raw_map)
-    env = GridEnv(0.1, 3.5, agent_num, 1000, map_name, visualization=True)
+    env = GridEnv(
+        0.1,
+        3.5,
+        agent_num,
+        1000,
+        map_name,
+        visualization=True,
+        sensor_configs=sensor_configs,
+    )
     env.reset_for_traditional()
     while(True):
         env.step_for_mmpf()
 
-def use_cost_method_to_explore(agent_num, map_name):
-    env = GridEnv(0.1, 3.5, agent_num, 1000, map_name, visualization=True)
+def use_cost_method_to_explore(agent_num, map_name, sensor_configs=None):
+    env = GridEnv(
+        0.1,
+        3.5,
+        agent_num,
+        1000,
+        map_name,
+        visualization=True,
+        sensor_configs=sensor_configs,
+    )
     env.reset_for_traditional()
     while(True):
         env.step_for_cost()
 
 if __name__ == "__main__":
-    method_name = sys.argv[1]
-    agent_num = int(sys.argv[2])
-    map_name = sys.argv[3]
-    if method_name == 'mmpf':
-        use_mmpf_to_explore(agent_num, map_name)
-    if method_name == 'cost':
-        use_cost_method_to_explore(agent_num, map_name)
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("method", choices=["mmpf", "cost"])
+    parser.add_argument("agent_num", type=int)
+    parser.add_argument("map_name")
+    parser.add_argument(
+        "--sensor_types",
+        nargs="+",
+        choices=["omnidirectional", "four_beam"],
+        default=["omnidirectional"],
+    )
+    parser.add_argument(
+        "--sensor_ranges",
+        nargs="+",
+        type=float,
+        default=None,
+        help="one maximum range or one range per agent; accepts inf",
+    )
+    args = parser.parse_args()
+    configs = sensor_configs_from_values(
+        args.sensor_types, args.sensor_ranges, args.agent_num, 3.5
+    )
+    if args.method == "mmpf":
+        use_mmpf_to_explore(args.agent_num, args.map_name, configs)
+    if args.method == "cost":
+        use_cost_method_to_explore(args.agent_num, args.map_name, configs)
     
  
