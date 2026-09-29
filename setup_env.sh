@@ -6,8 +6,11 @@
 # Recreate it from scratch:
 #   source ./setup_env.sh --rebuild
 #
-# Also install the MAPPO/onpolicy dependencies:
+# Also install the Level-0 MAPPO dependencies:
 #   source ./setup_env.sh --full
+#
+# Install this checkout's onpolicy package in editable mode:
+#   source ./setup_env.sh --full --editable
 
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
     echo "Run this script with: source ./setup_env.sh"
@@ -18,6 +21,7 @@ explore_bench_root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 explore_bench_venv="${explore_bench_root}/.venv"
 explore_bench_rebuild=false
 explore_bench_full=false
+explore_bench_editable=false
 
 for explore_bench_arg in "$@"; do
     case "${explore_bench_arg}" in
@@ -27,9 +31,12 @@ for explore_bench_arg in "$@"; do
         --full)
             explore_bench_full=true
             ;;
+        --editable)
+            explore_bench_editable=true
+            ;;
         *)
             echo "Unknown option: ${explore_bench_arg}"
-            echo "Usage: source ./setup_env.sh [--rebuild] [--full]"
+            echo "Usage: source ./setup_env.sh [--rebuild] [--full] [--editable]"
             return 2
             ;;
     esac
@@ -57,15 +64,24 @@ fi
 # shellcheck disable=SC1091
 source "${explore_bench_venv}/bin/activate" || return 1
 
-python -m pip install --upgrade pip setuptools wheel || return 1
+python -m pip install --upgrade \
+    "pip<25.1" \
+    "setuptools<76" \
+    "wheel<0.46" || return 1
 python -m pip install -r "${explore_bench_root}/requirements-grid.txt" || return 1
 
 if [[ "${explore_bench_full}" == true ]]; then
-    echo "Installing MAPPO/onpolicy dependencies..."
-    python -m pip install torch torchvision || return 1
-    python -m pip install -r "${explore_bench_root}/onpolicy/requirements.txt" || return 1
+    echo "Installing Level-0 MAPPO dependencies..."
+    python -m pip install \
+        -r "${explore_bench_root}/requirements-level0-mappo.txt" || return 1
+fi
+
+if [[ "${explore_bench_editable}" == true ]]; then
+    echo "Installing the local onpolicy package in editable mode..."
     python -m pip install -e "${explore_bench_root}/onpolicy" || return 1
 fi
+
+python -m pip check || return 1
 
 echo "Explore-Bench environment active: ${VIRTUAL_ENV}"
 python --version
