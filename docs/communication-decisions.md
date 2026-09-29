@@ -31,6 +31,10 @@ Why:
   reproducible.
 - Vectorized environments can each own an isolated broker without shared state.
 
+The isolation requirement is tested by transmitting in one member of a vector
+environment and confirming that the other member's belief and metrics remain
+unchanged.
+
 Rejected alternative: a background thread or socket-like service. It would be
 appropriate for wall-clock robotics integration, but it adds concurrency without
 improving the Level-0 research abstraction.
@@ -93,11 +97,17 @@ Why:
 
 This is not a claim about a specific radio's throughput. Thesis results must
 describe these values as simulation parameters, not physical-layer measurements.
+Repeated collisions must exhaust tokens and episode budget on the same schedule
+as successful attempts. Once either resource is exhausted, the action mask must
+leave silence as the only available choice.
 
 ## Decision 5: Snapshot at Send, Latest Timestamp Wins
 
 Payloads copy the sender state when the action is taken. A receiver applies a map
 cell only when the message timestamp is newer than its current cell timestamp.
+On an equal timestamp, the receiver keeps its existing value. This makes a local
+observation authoritative over a simultaneous remote claim and resolves ties
+without queue-order dependence.
 
 Why:
 
@@ -124,7 +134,9 @@ Why:
 
 The principal validity check is not merely that a private map exists. The
 navigation planner must also consume the actor's belief map. Both the learned
-runner and standalone planners now do so.
+runner and standalone planners now do so. Unknown belief cells are treated as
+blocked for route planning, even when the corresponding ground-truth cells form
+a shorter free corridor.
 
 ## Decision 7: Communication Is Part of the Joint Action
 
@@ -192,4 +204,3 @@ Examples of defensible extensions are explicit TDMA, receiver addressing,
 acknowledgements, learned compression, wall attenuation, and a ROS transport
 adapter. They should not be folded into the default model without separate
 experimental controls.
-
