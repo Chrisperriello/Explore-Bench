@@ -50,8 +50,20 @@ class GridRunner(Runner):
                     # else:
                     #     inputs[e]['global_obs'] = self.obs['global_obs'][e]
                     # we only want the robot to go its own frontiers
-                    inputs[e]['global_obs'] = self.obs['global_obs'][e]
+                    inputs[e]['global_obs'] = (
+                        self.obs['global_merge_obs'][e]
+                        if self.communication_enabled
+                        else self.obs['global_obs'][e]
+                    )
                 actions_env = self.envs.get_short_term_goal(inputs)
+                if self.communication_enabled:
+                    actions_env = [
+                        {
+                            'motion_goals': actions_env[e],
+                            'comm_actions': self.communication_actions[e],
+                        }
+                        for e in range(self.n_rollout_threads)
+                    ]
                 
                 dict_obs, rewards, dones, infos = self.envs.step(actions_env)
 
@@ -422,13 +434,211 @@ class GridRunner(Runner):
 
         return raw_obs, obs
 
+    def _resize_communication_convert(self, dict_obs, infos, evaluation=False):
+        env_count = len(dict_obs)
+        map_shape = (env_count, self.num_agents, 4, self.full_w, self.full_h)
+        input_shape = (env_count, self.num_agents, 4, self.input_w, self.input_h)
+        raw_obs = {
+            'global_obs': np.zeros(map_shape, dtype=np.float32),
+            'global_merge_obs': np.zeros(map_shape, dtype=np.float32),
+            'vector': np.zeros(
+                (env_count, self.num_agents, self.num_agents), dtype=np.float32
+            ),
+            'comm_candidates': np.zeros(
+                (
+                    env_count,
+                    self.num_agents,
+                    self.all_args.comm_candidate_count,
+                    5,
+                ),
+                dtype=np.float32,
+            ),
+            'comm_status': np.zeros(
+                (env_count, self.num_agents, 8), dtype=np.float32
+            ),
+        }
+        obs = {
+            'global_obs': np.zeros(input_shape, dtype=np.float32),
+            'global_merge_obs': np.zeros(input_shape, dtype=np.float32),
+            'vector': np.zeros_like(raw_obs['vector']),
+            'comm_candidates': np.zeros_like(raw_obs['comm_candidates']),
+            'comm_status': np.zeros_like(raw_obs['comm_status']),
+        }
+        share_obs = {
+            key: np.zeros_like(value) for key, value in obs.items()
+        }
+        share_obs['agent_beliefs'] = np.zeros(
+            (
+                env_count,
+                self.num_agents,
+                2 * self.num_agents,
+                self.input_w,
+                self.input_h,
+            ),
+            dtype=np.float32,
+        )
+        share_obs['global_comm_state'] = np.zeros(
+            (env_count, self.num_agents, 3 * self.num_agents + 2),
+            dtype=np.float32,
+        )
+        available_actions = np.zeros(
+            (
+                env_count,
+                self.num_agents,
+                self.all_args.comm_candidate_count + 2,
+            ),
+            dtype=np.float32,
+        )
+        own_histories = (
+            self.eval_all_agent_pos_map if evaluation else self.all_agent_pos_map
+        )
+        team_histories = (
+            self.eval_all_merge_pos_map if evaluation else self.all_merge_pos_map
+        )
+
+        for e in range(env_count):
+            info = infos[e]
+            current_positions = np.zeros((self.full_w, self.full_h), dtype=np.float32)
+            for agent_id in range(self.num_agents):
+                row, column = info['current_agent_pos'][agent_id]
+                marker = (agent_id + 1) * self.augment
+                own_histories[e, agent_id, row, column] = marker
+                team_histories[e, row, column] = max(
+                    team_histories[e, row, column], marker
+                )
+                current_positions[row, column] = marker
+
+            resized_beliefs = np.zeros(
+                (2 * self.num_agents, self.input_w, self.input_h),
+                dtype=np.float32,
+            )
+            for belief_agent in range(self.num_agents):
+                belief = info['belief_each_map'][belief_agent]
+                resized_beliefs[2 * belief_agent] = cv2.resize(
+                    (belief != 205).astype(np.uint8),
+                    (self.input_w, self.input_h),
+                ).astype(np.float32)
+                resized_beliefs[2 * belief_agent + 1] = cv2.resize(
+                    (belief == 0).astype(np.uint8),
+                    (self.input_w, self.input_h),
+                ).astype(np.float32)
+
+            global_comm_state = np.concatenate(
+                [
+                    info['comm_status'][:, :3].reshape(-1),
+                    np.array(
+                        [
+                            min(
+                                1.0,
+                                info['comm_in_flight_count']
+                                / float(max(1, self.num_agents)),
+                            ),
+                            info['comm_step'] / float(max(1, self.max_steps)),
+                        ],
+                        dtype=np.float32,
+                    ),
+                ]
+            )
+
+            for agent_id in range(self.num_agents):
+                row, column = info['current_agent_pos'][agent_id]
+                self_position = np.zeros(
+                    (self.full_w, self.full_h), dtype=np.float32
+                )
+                self_position[row, column] = (agent_id + 1) * self.augment
+                belief = info['belief_each_map'][agent_id]
+                peer_positions = np.zeros_like(self_position)
+                peer_age = np.zeros_like(self_position)
+                for sender in range(self.num_agents):
+                    if sender == agent_id:
+                        continue
+                    peer_row, peer_column = info['peer_positions'][agent_id, sender]
+                    sent_step = info['peer_pose_steps'][agent_id, sender]
+                    if peer_row < 0 or sent_step < 0:
+                        continue
+                    peer_positions[peer_row, peer_column] = (
+                        sender + 1
+                    ) * self.augment
+                    age = max(0, info['comm_step'] - sent_step)
+                    peer_age[peer_row, peer_column] = max(
+                        0.0,
+                        1.0 - age / float(max(1, self.all_args.comm_ttl_steps)),
+                    )
+
+                raw_obs['global_obs'][e, agent_id, 0] = info[
+                    'explored_each_map'
+                ][agent_id]
+                raw_obs['global_obs'][e, agent_id, 1] = info[
+                    'obstacle_each_map'
+                ][agent_id]
+                raw_obs['global_obs'][e, agent_id, 2] = self_position / 255.0
+                raw_obs['global_obs'][e, agent_id, 3] = (
+                    own_histories[e, agent_id] / 255.0
+                )
+                raw_obs['global_merge_obs'][e, agent_id, 0] = belief != 205
+                raw_obs['global_merge_obs'][e, agent_id, 1] = belief == 0
+                raw_obs['global_merge_obs'][e, agent_id, 2] = (
+                    peer_positions / 255.0
+                )
+                raw_obs['global_merge_obs'][e, agent_id, 3] = peer_age
+                raw_obs['vector'][e, agent_id] = np.eye(self.num_agents)[agent_id]
+                raw_obs['comm_candidates'][e, agent_id] = info[
+                    'comm_candidate_features'
+                ][agent_id]
+                raw_obs['comm_status'][e, agent_id] = info['comm_status'][agent_id]
+                available_actions[e, agent_id] = info['available_comm_actions'][
+                    agent_id
+                ]
+
+                for key in ('global_obs', 'global_merge_obs'):
+                    for channel in range(4):
+                        obs[key][e, agent_id, channel] = cv2.resize(
+                            raw_obs[key][e, agent_id, channel].astype(np.float32),
+                            (self.input_w, self.input_h),
+                        )
+                obs['vector'][e, agent_id] = raw_obs['vector'][e, agent_id]
+                obs['comm_candidates'][e, agent_id] = raw_obs[
+                    'comm_candidates'
+                ][e, agent_id]
+                obs['comm_status'][e, agent_id] = raw_obs['comm_status'][
+                    e, agent_id
+                ]
+
+                for key in ('global_obs', 'vector', 'comm_candidates', 'comm_status'):
+                    share_obs[key][e, agent_id] = obs[key][e, agent_id]
+                share_obs['global_merge_obs'][e, agent_id, 0] = cv2.resize(
+                    info['explored_all_map'].astype(np.uint8),
+                    (self.input_w, self.input_h),
+                ).astype(np.float32)
+                share_obs['global_merge_obs'][e, agent_id, 1] = cv2.resize(
+                    info['obstacle_all_map'].astype(np.uint8),
+                    (self.input_w, self.input_h),
+                ).astype(np.float32)
+                share_obs['global_merge_obs'][e, agent_id, 2] = cv2.resize(
+                    (current_positions > 0).astype(np.uint8),
+                    (self.input_w, self.input_h),
+                ).astype(np.float32)
+                share_obs['global_merge_obs'][e, agent_id, 3] = cv2.resize(
+                    (team_histories[e] > 0).astype(np.uint8),
+                    (self.input_w, self.input_h),
+                ).astype(np.float32)
+                share_obs['agent_beliefs'][e, agent_id] = resized_beliefs
+                share_obs['global_comm_state'][e, agent_id] = global_comm_state
+
+        return raw_obs, obs, share_obs, available_actions
+
     def warmup(self):
         # reset env
         dict_obs, info = self.envs.reset()  
-        raw_obs, obs = self._resize_convert(dict_obs, info)
+        if self.communication_enabled:
+            raw_obs, obs, share_obs, available_actions = (
+                self._resize_communication_convert(dict_obs, info)
+            )
+            self.buffer.available_actions[0] = available_actions.copy()
+        else:
+            raw_obs, obs = self._resize_convert(dict_obs, info)
+            raw_share_obs, share_obs = self._resize_convert(dict_obs, info)
         self.obs = raw_obs
-        #if not self.use_centralized_V:
-        raw_share_obs, share_obs = self._resize_convert(dict_obs, info)
 
         for key in obs.keys():
             self.buffer.obs[key][0] = obs[key].copy()
@@ -446,6 +656,9 @@ class GridRunner(Runner):
         self.full_w, self.full_h = map_size, map_size
         self.input_w, self.input_h = input_map_size, input_map_size
         self.use_merge = self.all_args.use_merge
+        self.communication_enabled = (
+            getattr(self.all_args, 'communication_mode', None) is not None
+        )
         self.use_intrinsic_reward= self.all_args.use_intrinsic_reward
         self.visualize_input = self.all_args.visualize_input
         self.local_step_num = self.all_args.local_step_num
@@ -459,14 +672,14 @@ class GridRunner(Runner):
         #self.global_goal = np.zeros((self.n_rollout_threads, self.num_agents, 2), dtype=np.float32) 
         self.short_term_goal = np.zeros((self.n_rollout_threads, self.num_agents, 2), dtype=np.float32) 
         self.all_agent_pos_map = np.zeros((self.n_rollout_threads, self.num_agents, self.full_w, self.full_h), dtype=np.float32)
-        if self.use_merge:
+        if self.use_merge or self.communication_enabled:
             #self.global_merge_goal_trace = np.zeros((self.n_rollout_threads, self.full_w-2*self.agent_view_size, self.full_h-2*self.agent_view_size), dtype=np.float32)
             self.all_merge_pos_map = np.zeros((self.n_rollout_threads, self.full_w, self.full_h), dtype=np.float32)
 
     def init_eval_map_variables(self):
         # Initializing full, merge and local map
         self.eval_all_agent_pos_map = np.zeros((self.n_eval_rollout_threads, self.num_agents, self.full_w, self.full_h), dtype=np.float32)
-        if self.use_merge:
+        if self.use_merge or self.communication_enabled:
             #self.eval_global_merge_goal_trace = np.zeros((self.n_eval_rollout_threads, self.full_w-2*self.agent_view_size, self.full_h-2*self.agent_view_size), dtype=np.float32)
             self.eval_all_merge_pos_map = np.zeros((self.n_eval_rollout_threads, self.full_w, self.full_h), dtype=np.float32)
 
@@ -486,7 +699,10 @@ class GridRunner(Runner):
                             concat_obs,
                             np.concatenate(self.buffer.rnn_states[step]),
                             np.concatenate(self.buffer.rnn_states_critic[step]),
-                            np.concatenate(self.buffer.masks[step]))
+                            np.concatenate(self.buffer.masks[step]),
+                            np.concatenate(self.buffer.available_actions[step])
+                            if self.buffer.available_actions is not None
+                            else None)
         # [self.envs, agents, dim]
         values = np.array(np.split(_t2n(value), self.n_rollout_threads))
         actions = np.array(np.split(_t2n(action), self.n_rollout_threads))
@@ -494,7 +710,13 @@ class GridRunner(Runner):
         rnn_states = np.array(np.split(_t2n(rnn_states), self.n_rollout_threads))
         rnn_states_critic = np.array(np.split(_t2n(rnn_states_critic), self.n_rollout_threads))
         
-        self.short_term_goal = np.array(np.split(_t2n(nn.Sigmoid()(action)), self.n_rollout_threads))
+        if self.communication_enabled:
+            self.short_term_goal = np.array(
+                np.split(_t2n(nn.Sigmoid()(action[:, :2])), self.n_rollout_threads)
+            )
+            self.communication_actions = actions[:, :, 2].astype(np.int64)
+        else:
+            self.short_term_goal = np.array(np.split(_t2n(nn.Sigmoid()(action)), self.n_rollout_threads))
         
         return values, actions, action_log_probs, rnn_states, rnn_states_critic
 
@@ -521,14 +743,19 @@ class GridRunner(Runner):
         masks = np.ones((self.n_rollout_threads, self.num_agents, 1), dtype=np.float32)
         masks[dones_env == True] = np.zeros(((dones_env == True).sum(), self.num_agents, 1), dtype=np.float32)
 
-        raw_obs, obs = self._resize_convert(dict_obs, infos)
-        self.obs = raw_obs
-        raw_share_obs, share_obs = self._resize_convert(dict_obs, infos)
-
         self.all_agent_pos_map[dones_env == True] = np.zeros(((dones_env == True).sum(), self.num_agents, self.full_w, self.full_h), dtype=np.float32)
-        if self.use_merge:
+        if self.use_merge or self.communication_enabled:
             self.all_merge_pos_map[dones_env == True] = np.zeros(((dones_env == True).sum(), self.full_w, self.full_h), dtype=np.float32)
-            #self.global_merge_goal_trace[dones_env == True] = np.zeros(((dones_env == True).sum(), self.full_w-2*self.agent_view_size, self.full_h-2*self.agent_view_size), dtype=np.float32)
+
+        if self.communication_enabled:
+            raw_obs, obs, share_obs, available_actions = (
+                self._resize_communication_convert(dict_obs, infos)
+            )
+        else:
+            raw_obs, obs = self._resize_convert(dict_obs, infos)
+            raw_share_obs, share_obs = self._resize_convert(dict_obs, infos)
+            available_actions = None
+        self.obs = raw_obs
         # if self.use_intrinsic_reward:
         #     for e in range(self.n_rollout_threads):
         #         for agent_id in range(self.num_agents):
@@ -541,14 +768,62 @@ class GridRunner(Runner):
         #                     rewards[e,agent_id,0]-=0.01
             
         for done_env, info in zip(dones_env, infos):
+            metric_info = info.get('terminal_info', info)
+            if self.communication_enabled:
+                step_metrics = metric_info.get('comm_step_metrics')
+                if step_metrics is not None:
+                    for metric in (
+                        'attempted_messages',
+                        'delivered_messages',
+                        'collision_messages',
+                        'lost_messages',
+                        'expired_messages',
+                        'in_range_recipients',
+                        'attempted_bits',
+                        'delivered_bits',
+                        'mean_latency',
+                    ):
+                        self.env_infos[
+                            'comm_' + metric + '_per_step'
+                        ].append(step_metrics[metric])
+                self.env_infos['comm_reward_cost_per_step'].append(
+                    float(np.sum(metric_info['comm_penalties']))
+                )
             if done_env:
-                self.env_infos['merge_explored_ratio_step'].append(info['merge_ratio_step'])
-                self.env_infos['merge_explored_ratio'].append(info['merge_explored_ratio'])
+                self.env_infos['merge_explored_ratio_step'].append(metric_info['merge_ratio_step'])
+                self.env_infos['merge_explored_ratio'].append(metric_info['merge_explored_ratio'])
+                if self.communication_enabled:
+                    metrics = metric_info['comm_metrics']
+                    for metric in (
+                        'attempted_messages',
+                        'delivered_messages',
+                        'collision_messages',
+                        'lost_messages',
+                        'expired_messages',
+                        'in_range_recipients',
+                        'attempted_bits',
+                        'delivered_bits',
+                        'mean_latency',
+                    ):
+                        self.env_infos[
+                            'comm_episode_' + metric
+                        ].append(metrics[metric])
                 for agent_id in range(self.num_agents):
                     agent_k = "agent{}_ratio_step".format(agent_id)
-                    self.env_infos[agent_k].append(info[agent_k])
+                    self.env_infos[agent_k].append(metric_info[agent_k])
 
-        self.buffer.insert(share_obs, obs, rnn_states, rnn_states_critic, actions, action_log_probs, values, rewards, masks)
+        self.buffer.insert(
+            share_obs,
+            obs,
+            rnn_states,
+            rnn_states_critic,
+            actions,
+            action_log_probs,
+            values,
+            rewards,
+            masks,
+            available_actions=available_actions,
+        )
     
     def visualize_obs(self, fig, ax, obs):
         # individual
@@ -583,7 +858,17 @@ class GridRunner(Runner):
         # reset_choose = np.ones(self.n_eval_rollout_threads) == 1.0
         self.init_eval_map_variables()
         eval_dict_obs, eval_infos = self.eval_envs.reset()
-        raw_eval_obs, eval_obs = self._resize_eval_convert(eval_dict_obs, eval_infos)
+        if self.communication_enabled:
+            raw_eval_obs, eval_obs, _, eval_available_actions = (
+                self._resize_communication_convert(
+                    eval_dict_obs, eval_infos, evaluation=True
+                )
+            )
+        else:
+            raw_eval_obs, eval_obs = self._resize_eval_convert(
+                eval_dict_obs, eval_infos
+            )
+            eval_available_actions = None
 
         eval_rnn_states = np.zeros((self.n_eval_rollout_threads, *self.buffer.rnn_states.shape[2:]), dtype=np.float32)
         eval_masks = np.ones((self.n_eval_rollout_threads, self.num_agents, 1), dtype=np.float32)
@@ -593,8 +878,15 @@ class GridRunner(Runner):
             eval_choose = (eval_dones_env==False)            
             if ~np.any(eval_choose):
                 break
-            eval_actions = np.ones((self.n_eval_rollout_threads, self.num_agents, action_shape)).astype(np.int) * (-1.0)
-            self.short_term_goal = np.ones((self.n_eval_rollout_threads, self.num_agents, action_shape)).astype(np.float32)
+            eval_actions = np.full(
+                (self.n_eval_rollout_threads, self.num_agents, action_shape),
+                -1.0,
+                dtype=np.float32,
+            )
+            self.short_term_goal = np.ones(
+                (self.n_eval_rollout_threads, self.num_agents, 2),
+                dtype=np.float32,
+            )
             
             self.trainer.prep_rollout()
 
@@ -619,12 +911,21 @@ class GridRunner(Runner):
             eval_action, eval_rnn_state = self.trainer.policy.act(concat_eval_obs,
                                             np.concatenate(eval_rnn_states[eval_choose]),
                                             np.concatenate(eval_masks[eval_choose]),
+                                            np.concatenate(eval_available_actions[eval_choose])
+                                            if eval_available_actions is not None
+                                            else None,
                                             deterministic=True)
             print('RL raw output: ', eval_action)
             eval_actions[eval_choose] = np.array(np.split(_t2n(eval_action), (eval_choose == True).sum()))
             eval_rnn_states[eval_choose] = np.array(np.split(_t2n(eval_rnn_state), (eval_choose == True).sum()))
         # Obser reward and next obs
-            self.short_term_goal[eval_choose] = np.array(np.split(_t2n(nn.Sigmoid()(eval_action)), (eval_choose == True).sum()))
+            motion_action = eval_action[:, :2] if self.communication_enabled else eval_action
+            self.short_term_goal[eval_choose] = np.array(
+                np.split(
+                    _t2n(nn.Sigmoid()(motion_action)),
+                    (eval_choose == True).sum(),
+                )
+            )
             inputs = [{} for _ in range(self.n_eval_rollout_threads)]
             for e in range(self.n_eval_rollout_threads):
                 inputs[e]['global_goal'] = self.short_term_goal[e]
@@ -633,35 +934,74 @@ class GridRunner(Runner):
                 #     inputs[e]['global_obs'] = raw_eval_obs['global_merge_obs'][e]
                 # else:
                 #     inputs[e]['global_obs'] = raw_eval_obs['global_obs'][e]
-                inputs[e]['global_obs'] = raw_eval_obs['global_obs'][e]
+                inputs[e]['global_obs'] = (
+                    raw_eval_obs['global_merge_obs'][e]
+                    if self.communication_enabled
+                    else raw_eval_obs['global_obs'][e]
+                )
             #print(self.global_goal)
             #if np.array(local_step_num).min()-1 < self.local_step_num :
                 #self.local_step_num  = np.array(local_step_num).min() - 1
             eval_actions_env = self.eval_envs.get_short_term_goal(inputs)
+            if self.communication_enabled:
+                communication_actions = eval_actions[:, :, 2].astype(np.int64)
+                eval_actions_env = [
+                    {
+                        'motion_goals': eval_actions_env[e],
+                        'comm_actions': communication_actions[e],
+                    }
+                    for e in range(self.n_eval_rollout_threads)
+                ]
             eval_dict_obs, eval_rewards, eval_dones, eval_infos = self.eval_envs.step(eval_actions_env)
             # eval_dict_obs, eval_rewards, eval_dones, eval_infos = self.eval_envs.step_each_grid(eval_actions_env)
             
             eval_dones_env = np.all(eval_dones, axis=-1)
 
-            raw_eval_obs, eval_obs = self._resize_eval_convert(eval_dict_obs, eval_infos)
+            self.eval_all_agent_pos_map[eval_dones_env == True] = np.zeros(((eval_dones_env == True).sum(), self.num_agents, self.full_w, self.full_h), dtype=np.float32)
+            if self.use_merge or self.communication_enabled:
+                self.eval_all_merge_pos_map[eval_dones_env == True] = np.zeros(((eval_dones_env == True).sum(), self.full_w, self.full_h), dtype=np.float32)
+
+            if self.communication_enabled:
+                raw_eval_obs, eval_obs, _, eval_available_actions = (
+                    self._resize_communication_convert(
+                        eval_dict_obs, eval_infos, evaluation=True
+                    )
+                )
+            else:
+                raw_eval_obs, eval_obs = self._resize_eval_convert(
+                    eval_dict_obs, eval_infos
+                )
 
             eval_episode_rewards.append(eval_rewards)
 
             for eval_info, eval_done_env in zip(eval_infos, eval_dones_env):
+                metric_info = eval_info.get('terminal_info', eval_info)
                 if eval_done_env:
-                    eval_env_infos['eval_merge_explored_ratio_step'].append(eval_info['merge_ratio_step'])
-                    eval_env_infos['eval_merge_explored_ratio'].append(eval_info['merge_explored_ratio'])
+                    eval_env_infos['eval_merge_explored_ratio_step'].append(metric_info['merge_ratio_step'])
+                    eval_env_infos['eval_merge_explored_ratio'].append(metric_info['merge_explored_ratio'])
+                    if self.communication_enabled:
+                        metrics = metric_info['comm_metrics']
+                        for metric in (
+                            'attempted_messages',
+                            'delivered_messages',
+                            'collision_messages',
+                            'lost_messages',
+                            'expired_messages',
+                            'in_range_recipients',
+                            'attempted_bits',
+                            'delivered_bits',
+                            'mean_latency',
+                        ):
+                            eval_env_infos[
+                                'eval_comm_episode_' + metric
+                            ].append(metrics[metric])
                     for agent_id in range(self.num_agents):
                         agent_k = "agent{}_ratio_step".format(agent_id)
-                        eval_env_infos["eval_" + agent_k].append(eval_info[agent_k])
+                        eval_env_infos["eval_" + agent_k].append(metric_info[agent_k])
 
             eval_rnn_states[eval_dones_env == True] = np.zeros(((eval_dones_env == True).sum(), self.num_agents, self.recurrent_N, self.hidden_size), dtype=np.float32)
             eval_masks = np.ones((self.n_eval_rollout_threads, self.num_agents, 1), dtype=np.float32)
             eval_masks[eval_dones_env == True] = np.zeros(((eval_dones_env == True).sum(), self.num_agents, 1), dtype=np.float32)
-            self.eval_all_agent_pos_map[eval_dones_env == True] = np.zeros(((eval_dones_env == True).sum(), self.num_agents, self.full_w, self.full_h), dtype=np.float32)
-            if self.use_merge:
-                #self.eval_global_merge_goal_trace[eval_dones_env == True] = np.zeros(((eval_dones_env == True).sum(), self.full_w-2*self.agent_view_size, self.full_h-2*self.agent_view_size), dtype=np.float32)
-                self.eval_all_merge_pos_map[eval_dones_env == True] = np.zeros(((eval_dones_env == True).sum(), self.full_w, self.full_h), dtype=np.float32)
      
         eval_episode_rewards = np.array(eval_episode_rewards)
         
