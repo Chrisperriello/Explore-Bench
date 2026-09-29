@@ -34,6 +34,7 @@ class ACTLayer(nn.Module):
         else:  # discrete + continous
             self.mixed_action = True
             continous_dim = action_space[0].shape[0]
+            self.continuous_dim = continous_dim
             discrete_dim = action_space[1].n
             self.action_outs = nn.ModuleList([DiagGaussian(inputs_dim, continous_dim, use_orthogonal, gain), Categorical(
                 inputs_dim, discrete_dim, use_orthogonal, gain)])
@@ -42,8 +43,12 @@ class ACTLayer(nn.Module):
         if self.mixed_action :
             actions = []
             action_log_probs = []
-            for action_out in self.action_outs:
-                action_logit = action_out(x)
+            for index, action_out in enumerate(self.action_outs):
+                action_logit = (
+                    action_out(x, available_actions)
+                    if index == 1
+                    else action_out(x)
+                )
                 action = action_logit.mode() if deterministic else action_logit.sample()
                 action_log_prob = action_logit.log_probs(action)
                 actions.append(action.float())
@@ -80,8 +85,12 @@ class ACTLayer(nn.Module):
     def get_probs(self, x, available_actions=None):
         if self.mixed_action or self.multidiscrete_action:
             action_probs = []
-            for action_out in self.action_outs:
-                action_logit = action_out(x)
+            for index, action_out in enumerate(self.action_outs):
+                action_logit = (
+                    action_out(x, available_actions)
+                    if self.mixed_action and index == 1
+                    else action_out(x)
+                )
                 action_prob = action_logit.probs
                 action_probs.append(action_prob)
             action_probs = torch.cat(action_probs, -1)
@@ -96,13 +105,17 @@ class ACTLayer(nn.Module):
 
     def evaluate_actions(self, x, action, available_actions=None, active_masks=None):
         if self.mixed_action:
-            a, b = action.split((2, 1), -1)
+            a, b = action.split((self.continuous_dim, 1), -1)
             b = b.long()
             action = [a, b] 
             action_log_probs = [] 
             dist_entropy = []
-            for action_out, act in zip(self.action_outs, action):
-                action_logit = action_out(x)
+            for index, (action_out, act) in enumerate(zip(self.action_outs, action)):
+                action_logit = (
+                    action_out(x, available_actions)
+                    if index == 1
+                    else action_out(x)
+                )
                 action_log_probs.append(action_logit.log_probs(act))
                 if active_masks is not None:
                     if len(action_logit.entropy().shape) == len(active_masks.shape):
