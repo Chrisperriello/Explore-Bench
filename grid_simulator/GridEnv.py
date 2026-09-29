@@ -17,8 +17,18 @@ from sensors import (
     sensor_configs_from_values,
     yaw_to_cardinal,
 )
+from communication import (
+    COMMUNICATION_MODES,
+    MAP_PATCH,
+    SILENCE,
+    CommunicationBroker,
+    CommunicationConfig,
+)
 import random
 import os
+
+
+COMMUNICATION_PROTOCOLS = ("round_robin", "always", "none")
 
 class GridEnv(gym.Env):
     def __init__(self, resolution, sensor_range, num_agents, max_steps,
@@ -30,7 +40,10 @@ class GridEnv(gym.Env):
         use_time_penalty = False,
         use_single_reward = False,
         visualization = False,
-        sensor_configs = None):
+        sensor_configs = None,
+        communication_config = None,
+        communication_protocol = "round_robin",
+        seed = None):
 
         self.num_agents = num_agents
         self.map_name = map_name
@@ -45,6 +58,21 @@ class GridEnv(gym.Env):
         )
         self.sensors = [create_sensor(config) for config in self.sensor_configs]
         self.latest_sensor_readings = [None for _ in range(num_agents)]
+        if communication_protocol not in COMMUNICATION_PROTOCOLS:
+            raise ValueError(
+                "unsupported communication protocol: {}".format(
+                    communication_protocol
+                )
+            )
+        self.communication_config = communication_config
+        self.communication_protocol = communication_protocol
+        self.communication_broker = (
+            CommunicationBroker(communication_config, num_agents, seed=seed)
+            if communication_config is not None
+            else None
+        )
+        self._round_robin_cursor = 0
+        self._random = random.Random(seed)
         self.pos_traj = []
         self.grid_traj = []
         self.map_per_frame = []
@@ -134,6 +162,61 @@ class GridEnv(gym.Env):
         # self.visualize_map = np.zeros((self.width, self.height))
         self.visualize_goal = [[0,0] for i in range(self.num_agents)]
 
+    def seed(self, seed=None):
+        self._random.seed(seed)
+        np.random.seed(seed)
+        if self.communication_broker is not None:
+            self.communication_broker.seed(seed)
+        return [seed]
+
+    def _reset_communication(self):
+        if self.communication_broker is None:
+            return
+        self.communication_broker.reset(
+            self.width,
+            self.height,
+            self.max_steps,
+            self.built_map,
+            self.agent_pos,
+            self.agent_dir,
+        )
+        self._round_robin_cursor = 0
+
+    def _planning_map(self, agent_id):
+        if self.communication_broker is None:
+            return self.complete_map
+        return self.communication_broker.belief_maps[agent_id]
+
+    def _transmit_traditional_communication(self):
+        if self.communication_broker is None:
+            return
+        actions = np.full(self.num_agents, SILENCE, dtype=np.int64)
+        if self.communication_protocol == "always":
+            actions[:] = MAP_PATCH
+        elif self.communication_protocol == "round_robin":
+            for offset in range(self.num_agents):
+                sender = (self._round_robin_cursor + offset) % self.num_agents
+                available = self.communication_broker.available_actions(sender)
+                if np.any(available[MAP_PATCH:] > 0):
+                    actions[sender] = MAP_PATCH
+                    self._round_robin_cursor = (sender + 1) % self.num_agents
+                    break
+        self.communication_broker.transmit(
+            actions, self.agent_pos, self.agent_dir
+        )
+
+    def _advance_traditional_communication(self):
+        if self.communication_broker is None:
+            return
+        self.communication_broker.advance(
+            self.built_map, self.agent_pos, self.agent_dir
+        )
+
+    def communication_metrics(self):
+        if self.communication_broker is None:
+            return {}
+        return self.communication_broker.metrics()
+
     def _sense_agent(self, agent_id, position, yaw):
         sensor_position = position
         if self.sensor_configs[agent_id].sensor_type == OMNIDIRECTIONAL:
@@ -218,6 +301,7 @@ class GridEnv(gym.Env):
         self.complete_map[temp == 2] = 0
         self.complete_map[temp == 1] = 254
         self.complete_map[temp == 0] = 205
+        self._reset_communication()
 
         info = {}
         info['explored_all_map'] = np.array(explored_all_map)
@@ -278,11 +362,11 @@ class GridEnv(gym.Env):
         for i in range(self.num_agents):
             random_at_obstacle_or_unknown = True
             while(random_at_obstacle_or_unknown):
-                x = random.randint(0, self.width - 1)
-                y = random.randint(0, self.height - 1)
+                x = self._random.randint(0, self.width - 1)
+                y = self._random.randint(0, self.height - 1)
                 if self.gt_map[x][y] == 254:     # free space
                     self.agent_pos.append([x, y])
-                    direction = random.randint(0, 3)
+                    direction = self._random.randint(0, 3)
                     self.agent_dir.append(direction)
                     self.agent_yaw.append(direction * math.pi / 2.0)
                     random_at_obstacle_or_unknown = False
@@ -324,6 +408,7 @@ class GridEnv(gym.Env):
         self.complete_map[temp == 2] = 0
         self.complete_map[temp == 1] = 254
         self.complete_map[temp == 0] = 205
+        self._reset_communication()
 
         info = {}
         info['explored_all_map'] = np.array(explored_all_map)
@@ -1063,11 +1148,12 @@ class GridEnv(gym.Env):
     def get_goal_for_cost(self):
         map_goal = []
         for e in range(self.num_agents):
+            planning_map = self._planning_map(e)
             # goal = [int(self.width*data['global_goal'][e][0]), int(self.height*data['global_goal'][e][1])]
             # self.visualize_goal[e] = goal
             # occupancy_grid = data['global_obs'][e, 0] + data['global_obs'][e, 1]
             # obstacle: 2  unknown: 0   free: 1
-            frs, _ = self.frontiers_detection_for_cost(self.complete_map)
+            frs, _ = self.frontiers_detection_for_cost(planning_map)
             # cluster targets into different groups and find the center of each group.
             target_process = copy.deepcopy(frs)
             cluster_center = []
@@ -1122,7 +1208,7 @@ class GridEnv(gym.Env):
             #         break
             
             # curr_dismap = self.dismapConstruction_start_target(self.agent_pos[e], self.built_map[e])
-            curr_dismap = self.dismapConstruction_start_target(self.agent_pos[e], self.complete_map)
+            curr_dismap = self.dismapConstruction_start_target(self.agent_pos[e], planning_map)
             Dis2Frs = []
             free_cluster_center = []
             for i in range(len(cluster_center)):
@@ -1130,7 +1216,7 @@ class GridEnv(gym.Env):
                 for x in range(3):
                     for y in range(3):
                         # if self.built_map[e][cluster_center[i][0]-1+x, cluster_center[i][1]-1+y] == 254:
-                        if self.complete_map[cluster_center[i][0]-1+x, cluster_center[i][1]-1+y] == 254:
+                        if planning_map[cluster_center[i][0]-1+x, cluster_center[i][1]-1+y] == 254:
                             Dis2Frs.append(curr_dismap[cluster_center[i][0]-1+x, cluster_center[i][1]-1+y])
                             free_cluster_center.append([cluster_center[i][0]-1+x, cluster_center[i][1]-1+y])
                             break
@@ -1180,6 +1266,7 @@ class GridEnv(gym.Env):
         current_agent_pos = []
         each_agent_rewards = []
         self.num_step += 1
+        self._transmit_traditional_communication()
         reward_obstacle_each_map = np.zeros((self.num_agents, self.width, self.height))
         delta_reward_each_map = np.zeros((self.num_agents, self.width, self.height))
         reward_explored_each_map = np.zeros((self.num_agents, self.width, self.height))
@@ -1255,6 +1342,7 @@ class GridEnv(gym.Env):
         self.complete_map[temp == 2] = 0
         self.complete_map[temp == 1] = 254
         self.complete_map[temp == 0] = 205
+        self._advance_traditional_communication()
 
         explore_cell_size = np.sum((self.complete_map != 205).astype(int))
         if explore_cell_size / self.total_cell_size > 0.9:
@@ -1319,11 +1407,12 @@ class GridEnv(gym.Env):
     def get_goal_for_mmpf(self):
         map_goal = []
         for e in range(self.num_agents):
+            planning_map = self._planning_map(e)
             # goal = [int(self.width*data['global_goal'][e][0]), int(self.height*data['global_goal'][e][1])]
             # self.visualize_goal[e] = goal
             # occupancy_grid = data['global_obs'][e, 0] + data['global_obs'][e, 1]
             # obstacle: 2  unknown: 0   free: 1
-            frs, _ = self.frontiers_detection_for_mmpf(self.complete_map)
+            frs, _ = self.frontiers_detection_for_mmpf(planning_map)
             # cluster targets into different groups and find the center of each group.
             target_process = copy.deepcopy(frs)
             cluster_center = []
@@ -1388,7 +1477,7 @@ class GridEnv(gym.Env):
             dismap_target = []
 
             for i in range(cluster_num):
-                dismap_target.append(self.dismapConstruction_start_target(cluster_center[i], self.built_map[e]))
+                dismap_target.append(self.dismapConstruction_start_target(cluster_center[i], planning_map))
 
             # calculate path
             iteration = 1
@@ -1464,6 +1553,7 @@ class GridEnv(gym.Env):
         current_agent_pos = []
         each_agent_rewards = []
         self.num_step += 1
+        self._transmit_traditional_communication()
         reward_obstacle_each_map = np.zeros((self.num_agents, self.width, self.height))
         delta_reward_each_map = np.zeros((self.num_agents, self.width, self.height))
         reward_explored_each_map = np.zeros((self.num_agents, self.width, self.height))
@@ -1539,6 +1629,7 @@ class GridEnv(gym.Env):
         self.complete_map[temp == 2] = 0
         self.complete_map[temp == 1] = 254
         self.complete_map[temp == 0] = 205
+        self._advance_traditional_communication()
 
         explore_cell_size = np.sum((self.complete_map != 205).astype(int))
         if explore_cell_size / self.total_cell_size > 0.9:
@@ -1583,7 +1674,14 @@ def get_neighbor(x, y, radius, x_max, y_max):
                 neighbor_list.append([x+i,y+j])
     return neighbor_list
 
-def use_mmpf_to_explore(agent_num, map_name, sensor_configs=None):
+def use_mmpf_to_explore(
+    agent_num,
+    map_name,
+    sensor_configs=None,
+    communication_config=None,
+    communication_protocol="round_robin",
+    seed=None,
+):
     # window.show_img(raw_map)
     env = GridEnv(
         0.1,
@@ -1593,12 +1691,22 @@ def use_mmpf_to_explore(agent_num, map_name, sensor_configs=None):
         map_name,
         visualization=True,
         sensor_configs=sensor_configs,
+        communication_config=communication_config,
+        communication_protocol=communication_protocol,
+        seed=seed,
     )
     env.reset_for_traditional()
     while(True):
         env.step_for_mmpf()
 
-def use_cost_method_to_explore(agent_num, map_name, sensor_configs=None):
+def use_cost_method_to_explore(
+    agent_num,
+    map_name,
+    sensor_configs=None,
+    communication_config=None,
+    communication_protocol="round_robin",
+    seed=None,
+):
     env = GridEnv(
         0.1,
         3.5,
@@ -1607,6 +1715,9 @@ def use_cost_method_to_explore(agent_num, map_name, sensor_configs=None):
         map_name,
         visualization=True,
         sensor_configs=sensor_configs,
+        communication_config=communication_config,
+        communication_protocol=communication_protocol,
+        seed=seed,
     )
     env.reset_for_traditional()
     while(True):
@@ -1632,13 +1743,65 @@ if __name__ == "__main__":
         default=None,
         help="one maximum range or one range per agent; accepts inf",
     )
+    parser.add_argument("--communication_mode", choices=COMMUNICATION_MODES)
+    parser.add_argument(
+        "--communication_protocol",
+        choices=COMMUNICATION_PROTOCOLS,
+        default="round_robin",
+    )
+    parser.add_argument("--comm_tile_size", type=int, default=8)
+    parser.add_argument("--comm_candidate_count", type=int, default=8)
+    parser.add_argument("--comm_range_cells", type=float, default=40.0)
+    parser.add_argument("--comm_latency_min_steps", type=int, default=1)
+    parser.add_argument("--comm_latency_max_steps", type=int)
+    parser.add_argument("--comm_packet_loss", type=float, default=0.0)
+    parser.add_argument("--comm_cooldown_steps", type=int, default=3)
+    parser.add_argument("--comm_bucket_capacity_bits", type=int, default=314)
+    parser.add_argument("--comm_bucket_refill_bits", type=int, default=53)
+    parser.add_argument("--comm_episode_budget_bits", type=int)
+    parser.add_argument("--comm_ttl_steps", type=int, default=8)
+    parser.add_argument("--comm_timestamp_bits", type=int, default=16)
+    parser.add_argument("--comm_cost_per_patch", type=float, default=0.01)
+    parser.add_argument("--seed", type=int, default=1)
     args = parser.parse_args()
     configs = sensor_configs_from_values(
         args.sensor_types, args.sensor_ranges, args.agent_num, 3.5
     )
+    communication_config = None
+    if args.communication_mode is not None:
+        communication_config = CommunicationConfig(
+            mode=args.communication_mode,
+            tile_size=args.comm_tile_size,
+            candidate_count=args.comm_candidate_count,
+            radio_range_cells=args.comm_range_cells,
+            latency_min_steps=args.comm_latency_min_steps,
+            latency_max_steps=args.comm_latency_max_steps,
+            packet_loss=args.comm_packet_loss,
+            cooldown_steps=args.comm_cooldown_steps,
+            bucket_capacity_bits=args.comm_bucket_capacity_bits,
+            bucket_refill_bits=args.comm_bucket_refill_bits,
+            episode_budget_bits=args.comm_episode_budget_bits,
+            ttl_steps=args.comm_ttl_steps,
+            timestamp_bits=args.comm_timestamp_bits,
+            cost_per_patch=args.comm_cost_per_patch,
+        )
     if args.method == "mmpf":
-        use_mmpf_to_explore(args.agent_num, args.map_name, configs)
+        use_mmpf_to_explore(
+            args.agent_num,
+            args.map_name,
+            configs,
+            communication_config,
+            args.communication_protocol,
+            args.seed,
+        )
     if args.method == "cost":
-        use_cost_method_to_explore(args.agent_num, args.map_name, configs)
+        use_cost_method_to_explore(
+            args.agent_num,
+            args.map_name,
+            configs,
+            communication_config,
+            args.communication_protocol,
+            args.seed,
+        )
     
  
