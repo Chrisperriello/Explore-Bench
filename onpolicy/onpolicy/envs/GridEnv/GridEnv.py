@@ -17,6 +17,7 @@ from .sensors import (
     normalize_yaw,
     yaw_to_cardinal,
 )
+from .communication import CommunicationBroker, MAP_PATCH
 # from Astar import AStar
 import random
 import os
@@ -30,7 +31,8 @@ class GridEnv(gym.Env):
         use_time_penalty = False,
         use_single_reward = False,
         visualization = False,
-        sensor_configs = None):
+        sensor_configs = None,
+        communication_config = None):
 
         self.num_agents = num_agents
 
@@ -44,6 +46,14 @@ class GridEnv(gym.Env):
         )
         self.sensors = [create_sensor(config) for config in self.sensor_configs]
         self.latest_sensor_readings = [None for _ in range(num_agents)]
+        self.communication_config = communication_config
+        self.communication_enabled = communication_config is not None
+        self.communication_broker = (
+            CommunicationBroker(communication_config, num_agents)
+            if self.communication_enabled
+            else None
+        )
+        self._random = random.Random()
         self.pos_traj = []
         self.grid_traj = []
         self.map_per_frame = []
@@ -85,7 +95,22 @@ class GridEnv(gym.Env):
         self.use_single_reward = use_single_reward
 
         # define space
-        self.action_space = [gym.spaces.Box(low=0.0, high=1.0, shape=(2,), dtype=np.float32) for _ in range(self.num_agents)]
+        if self.communication_enabled:
+            policy_action_space = gym.spaces.Tuple(
+                (
+                    gym.spaces.Box(
+                        low=0.0, high=1.0, shape=(2,), dtype=np.float32
+                    ),
+                    gym.spaces.Discrete(
+                        self.communication_config.candidate_count + MAP_PATCH
+                    ),
+                )
+            )
+        else:
+            policy_action_space = gym.spaces.Box(
+                low=0.0, high=1.0, shape=(2,), dtype=np.float32
+            )
+        self.action_space = [policy_action_space for _ in range(self.num_agents)]
 
         # Observations are dictionaries containing an
         # encoding of the grid and a textual 'mission' string
@@ -102,8 +127,8 @@ class GridEnv(gym.Env):
         # global_observation_space['vector'] = gym.spaces.Box(
         #     low=-1, high=1, shape=(self.num_agents,), dtype='float')
         global_observation_space['vector'] = gym.spaces.Box(
-            low=-1, high=1, shape=(2,), dtype='float')
-        if use_merge:
+            low=-1, high=1, shape=(self.num_agents,), dtype='float')
+        if use_merge or self.communication_enabled:
             global_observation_space['global_merge_obs'] = gym.spaces.Box(
                 low=0, high=255, shape=(4, self.resize_width, self.resize_height), dtype='uint8')
             # global_observation_space['global_direction'] = gym.spaces.Box(
@@ -111,7 +136,30 @@ class GridEnv(gym.Env):
         # else:
         #     global_observation_space['global_direction'] = gym.spaces.Box(
         #         low=-1, high=1, shape=(1, 4), dtype='float')
+        if self.communication_enabled:
+            global_observation_space['comm_candidates'] = gym.spaces.Box(
+                low=0.0,
+                high=1.0,
+                shape=(self.communication_config.candidate_count, 5),
+                dtype=np.float32,
+            )
+            global_observation_space['comm_status'] = gym.spaces.Box(
+                low=0.0, high=1.0, shape=(8,), dtype=np.float32
+            )
         share_global_observation_space = global_observation_space.copy()
+        if self.communication_enabled:
+            share_global_observation_space['agent_beliefs'] = gym.spaces.Box(
+                low=0,
+                high=255,
+                shape=(2 * self.num_agents, self.resize_width, self.resize_height),
+                dtype='uint8',
+            )
+            share_global_observation_space['global_comm_state'] = gym.spaces.Box(
+                low=0.0,
+                high=1.0,
+                shape=(3 * self.num_agents + 2,),
+                dtype=np.float32,
+            )
         # share_global_observation_space['gt_map'] = gym.spaces.Box(
         #     low=0, high=255, shape=(1, self.width, self.height), dtype='uint8')
         
@@ -133,6 +181,43 @@ class GridEnv(gym.Env):
         # self.visualize_map = np.zeros((self.width, self.height))
         self.visualize_goal = [[0,0] for i in range(self.num_agents)]
 
+    def seed(self, seed=None):
+        self._random.seed(seed)
+        np.random.seed(seed)
+        if self.communication_broker is not None:
+            self.communication_broker.seed(seed)
+        return [seed]
+
+    def _add_communication_info(self, info, penalties=None, attempted_bits=None):
+        if not self.communication_enabled:
+            return
+        broker = self.communication_broker
+        info['belief_each_map'] = np.array(broker.belief_maps)
+        info['peer_positions'] = np.array(broker.peer_positions)
+        info['peer_pose_steps'] = np.array(broker.peer_pose_steps)
+        info['comm_candidate_features'] = np.array(
+            [broker.candidate_features(i) for i in range(self.num_agents)]
+        )
+        info['comm_status'] = np.array(
+            [broker.status_vector(i) for i in range(self.num_agents)]
+        )
+        info['available_comm_actions'] = np.array(
+            [broker.available_actions(i) for i in range(self.num_agents)]
+        )
+        info['comm_metrics'] = broker.metrics()
+        info['comm_step'] = broker.current_step
+        info['comm_in_flight_count'] = broker.in_flight_count
+        info['comm_penalties'] = (
+            np.zeros(self.num_agents, dtype=np.float32)
+            if penalties is None
+            else np.asarray(penalties, dtype=np.float32)
+        )
+        info['comm_attempted_bits'] = (
+            np.zeros(self.num_agents, dtype=np.int64)
+            if attempted_bits is None
+            else np.asarray(attempted_bits, dtype=np.int64)
+        )
+
     def _sense_agent(self, agent_id, position, yaw):
         sensor_position = position
         if self.sensor_configs[agent_id].sensor_type == OMNIDIRECTIONAL:
@@ -150,8 +235,9 @@ class GridEnv(gym.Env):
        
     def reset(self):
         # 1. read from blueprints files randomly
-        map_file = random.choice(os.listdir('/home/nics/git_ws/src/onpolicy/onpolicy/envs/GridEnv/datasets'))
-        map_img = Image.open(os.path.join('/home/nics/git_ws/src/onpolicy/onpolicy/envs/GridEnv/datasets', map_file))
+        dataset_dir = os.path.join(os.path.dirname(__file__), 'datasets')
+        map_file = self._random.choice(os.listdir(dataset_dir))
+        map_img = Image.open(os.path.join(dataset_dir, map_file))
         # map_img = Image.open('/home/nics/workspace/blueprints/room1_modified.pgm')
         self.gt_map = np.array(map_img)
         self.inflation_map = obstacle_inflation(self.gt_map, 0.15, 0.05)
@@ -174,11 +260,11 @@ class GridEnv(gym.Env):
         for i in range(self.num_agents):
             random_at_obstacle_or_unknown = True
             while(random_at_obstacle_or_unknown):
-                x = random.randint(0, self.width - 1)
-                y = random.randint(0, self.height - 1)
+                x = self._random.randint(0, self.width - 1)
+                y = self._random.randint(0, self.height - 1)
                 if self.gt_map[x][y] == 254:     # free space
                     self.agent_pos.append([x, y])
-                    direction = random.randint(0, 3)
+                    direction = self._random.randint(0, 3)
                     self.agent_dir.append(direction)
                     self.agent_yaw.append(direction * math.pi / 2.0)
                     random_at_obstacle_or_unknown = False
@@ -221,6 +307,16 @@ class GridEnv(gym.Env):
         self.complete_map[temp == 1] = 254
         self.complete_map[temp == 0] = 205
 
+        if self.communication_enabled:
+            self.communication_broker.reset(
+                self.width,
+                self.height,
+                self.max_steps,
+                self.built_map,
+                self.agent_pos,
+                self.agent_dir,
+            )
+
         info = {}
         info['explored_all_map'] = np.array(explored_all_map)
         info['current_agent_pos'] = np.array(current_agent_pos)
@@ -230,6 +326,7 @@ class GridEnv(gym.Env):
         info['agent_direction'] = np.array(self.agent_dir)
         info['agent_yaw'] = np.array(self.agent_yaw)
         info['sensor_readings'] = copy.deepcopy(self.latest_sensor_readings)
+        self._add_communication_info(info)
         # info['agent_local_map'] = self.agent_local_map
 
         info['merge_explored_ratio'] = self.merge_ratio
@@ -265,6 +362,22 @@ class GridEnv(gym.Env):
         reward_explored_each_map = np.zeros((self.num_agents, self.width, self.height))
         explored_all_map = np.zeros((self.width, self.height))
         obstacle_all_map = np.zeros((self.width, self.height))
+
+        communication_penalties = None
+        communication_attempted_bits = None
+        communication_metrics_before = None
+        if self.communication_enabled:
+            if not isinstance(action, dict):
+                raise ValueError(
+                    "communication-enabled GridEnv.step expects motion_goals and comm_actions"
+                )
+            communication_metrics_before = self.communication_broker.metrics()
+            communication_penalties, communication_attempted_bits = (
+                self.communication_broker.transmit(
+                    action['comm_actions'], self.agent_pos, self.agent_dir
+                )
+            )
+            action = action['motion_goals']
 
         for i in range(self.num_agents):
             self.explored_each_map_t.append(np.zeros((self.width, self.height)))
@@ -323,6 +436,11 @@ class GridEnv(gym.Env):
         self.complete_map[temp == 1] = 254
         self.complete_map[temp == 0] = 205
 
+        if self.communication_enabled:
+            self.communication_broker.advance(
+                self.built_map, self.agent_pos, self.agent_dir
+            )
+
         reward_explored_all_map = explored_all_map.copy()
         reward_explored_all_map[reward_explored_all_map != 0] = 1
 
@@ -343,6 +461,37 @@ class GridEnv(gym.Env):
         info['agent_direction'] = np.array(self.agent_dir)
         info['agent_yaw'] = np.array(self.agent_yaw)
         info['sensor_readings'] = copy.deepcopy(self.latest_sensor_readings)
+        self._add_communication_info(
+            info, communication_penalties, communication_attempted_bits
+        )
+        if self.communication_enabled:
+            communication_metrics_after = info['comm_metrics']
+            step_metrics = {}
+            for key in (
+                'attempted_messages',
+                'transmitted_messages',
+                'delivered_messages',
+                'collision_messages',
+                'lost_messages',
+                'expired_messages',
+                'in_range_recipients',
+                'attempted_bits',
+                'delivered_bits',
+                'pose_messages',
+                'map_patch_messages',
+                'latency_total',
+            ):
+                step_metrics[key] = (
+                    communication_metrics_after[key]
+                    - communication_metrics_before[key]
+                )
+            delivered = step_metrics['delivered_messages']
+            step_metrics['mean_latency'] = (
+                step_metrics['latency_total'] / float(delivered)
+                if delivered
+                else 0.0
+            )
+            info['comm_step_metrics'] = step_metrics
         # info['agent_local_map'] = self.agent_local_map
         if self.use_time_penalty:
             info['agent_explored_reward'] = np.array(each_agent_rewards) * 0.02 - 0.01
@@ -351,7 +500,12 @@ class GridEnv(gym.Env):
             info['agent_explored_reward'] = np.array(each_agent_rewards) * 0.02
             info['merge_explored_reward'] = merge_explored_reward * 0.02
         done = False
-        if delta_reward_all_map.sum() / self.total_cell_size >= self.target_ratio or flag:#(self.width * self.height)
+        timed_out = self.communication_enabled and self.num_step >= self.max_steps
+        if (
+            delta_reward_all_map.sum() / self.total_cell_size >= self.target_ratio
+            or flag
+            or timed_out
+        ):#(self.width * self.height)
             done = True  
             # save trajectory for visualization
             # import pickle
@@ -381,6 +535,9 @@ class GridEnv(gym.Env):
             rewards = 0.3 * np.expand_dims(info['agent_explored_reward'], axis=1) + 0.7 * np.expand_dims(np.array([info['merge_explored_reward'] for _ in range(self.num_agents)]), axis=1)
         else:
             rewards = np.expand_dims(np.array([info['merge_explored_reward'] for _ in range(self.num_agents)]), axis=1)
+        info['task_rewards'] = np.array(rewards, copy=True)
+        if self.communication_enabled:
+            rewards = rewards - np.expand_dims(communication_penalties, axis=1)
 
         obs = np.array(obs)
 
