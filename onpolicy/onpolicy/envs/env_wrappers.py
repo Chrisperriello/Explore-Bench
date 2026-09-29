@@ -414,10 +414,14 @@ def infoworker(remote, parent_remote, env_fn_wrapper):
             ob, reward, done, info = env.step(data)
             if 'bool' in done.__class__.__name__:
                 if done:
+                    terminal_info = info
                     ob, info = env.reset()
+                    info['terminal_info'] = terminal_info
             else:
                 if np.all(done):
+                    terminal_info = info
                     ob, info = env.reset()
+                    info['terminal_info'] = terminal_info
             remote.send((ob, reward, done, info))
         elif cmd == 'reset':
             ob, info = env.reset()
@@ -1057,7 +1061,9 @@ class InfoDummyVecEnv(ShareVecEnv):
                     obs[i], infos[i] = self.envs[i].reset()
             else:
                 if np.all(done):
+                    terminal_info = infos[i]
                     obs[i], infos[i] = self.envs[i].reset()
+                    infos[i]['terminal_info'] = terminal_info
         self.actions = None
 
         return obs, rews, dones, infos
