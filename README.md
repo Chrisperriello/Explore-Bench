@@ -28,19 +28,26 @@ source /PATH/TO/CARTO_CATKIN_WS/devel_isolated/setup.bash
 MAPPO is a multi-agent variant of PPO (Proximal Policy Optimization), which is a SOTA on-policy reinforcement learning algorithm. We slightly modified the original [marlbenchmark/on-policy](https://github.com/marlbenchmark/on-policy) and provide the training and test code in this repo.
 
 ```bash
-# create conda environment
-conda create -n marl python==3.8.10
-conda activate marl
-pip install torch torchvision
+# Create or activate .venv and install the standalone Level-0 dependencies.
+source ./setup_env.sh
+
+# Add the general MAPPO training and test dependencies.
+source ./setup_env.sh --full
 ```
+
+The setup script uses Python 3.8 and pinned, mutually compatible packages. The
+`--full` dependency set is intentionally limited to Level-0 training, evaluation,
+logging, and tests; it does not install unrelated Atari, StarCraft, MuJoCo, MPI,
+TensorFlow, or CUDA-specific packages from the legacy `onpolicy/requirements.txt`.
 
 ```bash
-# install onpolicy package
-cd onpolicy
-pip install -e .
+# Optional: install this checkout's onpolicy package in editable mode.
+source ./setup_env.sh --full --editable
 ```
 
-We provide requirement.txt but it may have redundancy. We recommend that the user try to install other required packages by running the code and finding which required package hasn't installed yet.
+Use `source ./setup_env.sh --rebuild --full` to recreate a stale environment.
+The editable install is separate because the repository's Level-0 entry points
+already import the local `onpolicy` tree directly.
 
 ### Turtlebot3 Description and Simulation
 
@@ -189,6 +196,28 @@ The training parameters can be modified according to the user's need, i.e., the 
 
 Refer to `train_grid.sh` for details.
 
+Level-0 also supports opt-in constrained robot communication. The learned policy
+can choose silence, a pose broadcast, or a bounded map patch under configurable
+range, latency, loss, cooldown, bit-budget, and collision rules. For example:
+
+```bash
+python train/train_grid.py \
+  --env_name GridEnv \
+  --algorithm_name mappo \
+  --experiment_name shared_radio \
+  --num_agents 2 \
+  --communication_mode shared_collision \
+  --max_steps 100 \
+  --local_step_num 1 \
+  --use_wandb
+```
+
+Omitting `--communication_mode` retains the legacy Level-0 interface. See the
+[communication model](docs/level0-communication.md),
+[design decisions](docs/communication-decisions.md), and
+[experiment protocol](docs/communication-experiments.md) for semantics,
+rationale, limitations, and thesis-ready comparisons.
+
 ## Evaluate Exploration Approaches in Grid-based Simulator (Level-0)
 
 Besides training DRL models, the grid-based simulator can be used for fast evaluation of both frontier-based and DRL-based methods.
@@ -206,6 +235,16 @@ python GridEnv.py cost 1 ../onpolicy/onpolicy/envs/GridEnv/datasets/corner.pgm
 python GridEnv.py mmpf 2 ../onpolicy/onpolicy/envs/GridEnv/datasets/corner.pgm
 # evaluate mmpf in corner env (1 robots)
 python GridEnv.py mmpf 1 ../onpolicy/onpolicy/envs/GridEnv/datasets/corner.pgm
+```
+
+Standalone cost and MMPF evaluation can use the same channel model with a fixed
+protocol:
+
+```bash
+python GridEnv.py cost 2 ../onpolicy/onpolicy/envs/GridEnv/datasets/corner.pgm \
+  --communication_mode shared_collision \
+  --communication_protocol round_robin \
+  --seed 1
 ```
 
 ## Citation
