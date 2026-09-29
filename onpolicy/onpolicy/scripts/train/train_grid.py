@@ -12,8 +12,62 @@ import torch
 from onpolicy.config import get_config
 
 from onpolicy.envs.GridEnv.GridEnv import GridEnv
+from onpolicy.envs.GridEnv.communication import (
+    COMMUNICATION_MODES,
+    CommunicationConfig,
+)
 from onpolicy.envs.GridEnv.sensors import sensor_configs_from_values
 from onpolicy.envs.env_wrappers import InfoSubprocVecEnv, InfoDummyVecEnv, ChooseInfoSubprocVecEnv, ChooseInfoDummyVecEnv
+
+
+def make_communication_config(all_args):
+    if all_args.communication_mode is None:
+        return None
+    return CommunicationConfig(
+        mode=all_args.communication_mode,
+        tile_size=all_args.comm_tile_size,
+        candidate_count=all_args.comm_candidate_count,
+        radio_range_cells=all_args.comm_range_cells,
+        latency_min_steps=all_args.comm_latency_min_steps,
+        latency_max_steps=all_args.comm_latency_max_steps,
+        packet_loss=all_args.comm_packet_loss,
+        cooldown_steps=all_args.comm_cooldown_steps,
+        bucket_capacity_bits=all_args.comm_bucket_capacity_bits,
+        bucket_refill_bits=all_args.comm_bucket_refill_bits,
+        episode_budget_bits=all_args.comm_episode_budget_bits,
+        ttl_steps=all_args.comm_ttl_steps,
+        timestamp_bits=all_args.comm_timestamp_bits,
+        cost_per_patch=all_args.comm_cost_per_patch,
+    )
+
+
+def make_grid_env(all_args, sensor_configs, visualization=False):
+    communication_config = make_communication_config(all_args)
+    if communication_config is None:
+        return GridEnv(
+            0.1,
+            3,
+            all_args.num_agents,
+            100,
+            visualization=visualization,
+            sensor_configs=sensor_configs,
+        )
+    return GridEnv(
+        0.1,
+        3,
+        all_args.num_agents,
+        all_args.max_steps,
+        use_merge=all_args.use_merge,
+        use_same_location=all_args.use_same_location,
+        use_complete_reward=all_args.use_complete_reward,
+        use_multiroom=all_args.use_multiroom,
+        use_time_penalty=all_args.use_time_penalty,
+        use_single_reward=all_args.use_single_reward,
+        visualization=visualization,
+        sensor_configs=sensor_configs,
+        communication_config=communication_config,
+    )
+
 
 def make_train_env(all_args):
     sensor_configs = sensor_configs_from_values(
@@ -22,13 +76,7 @@ def make_train_env(all_args):
     def get_env_fn(rank):
         def init_env():
             if all_args.env_name == "GridEnv":
-                env = GridEnv(
-                    0.1,
-                    3,
-                    all_args.num_agents,
-                    100,
-                    sensor_configs=sensor_configs,
-                )
+                env = make_grid_env(all_args, sensor_configs)
             else:
                 print("Can not support the " +
                       all_args.env_name + "environment.")
@@ -49,14 +97,7 @@ def make_eval_env(all_args):
     def get_env_fn(rank):
         def init_env():
             if all_args.env_name == "GridEnv":
-                env = GridEnv(
-                    0.1,
-                    3,
-                    all_args.num_agents,
-                    100,
-                    visualization=True,
-                    sensor_configs=sensor_configs,
-                )
+                env = make_grid_env(all_args, sensor_configs, visualization=True)
             else:
                 print("Can not support the " +
                       all_args.env_name + "environment.")
@@ -83,6 +124,22 @@ def parse_args(args, parser):
                         help="one sensor type or one type per agent")
     parser.add_argument('--sensor_ranges', nargs='+', type=float, default=None,
                         help="one maximum range or one range per agent; accepts inf")
+    parser.add_argument('--communication_mode', choices=COMMUNICATION_MODES,
+                        default=None,
+                        help="enable the Level-0 communication model")
+    parser.add_argument('--comm_tile_size', type=int, default=8)
+    parser.add_argument('--comm_candidate_count', type=int, default=8)
+    parser.add_argument('--comm_range_cells', type=float, default=40.0)
+    parser.add_argument('--comm_latency_min_steps', type=int, default=1)
+    parser.add_argument('--comm_latency_max_steps', type=int, default=None)
+    parser.add_argument('--comm_packet_loss', type=float, default=0.0)
+    parser.add_argument('--comm_cooldown_steps', type=int, default=3)
+    parser.add_argument('--comm_bucket_capacity_bits', type=int, default=314)
+    parser.add_argument('--comm_bucket_refill_bits', type=int, default=53)
+    parser.add_argument('--comm_episode_budget_bits', type=int, default=None)
+    parser.add_argument('--comm_ttl_steps', type=int, default=8)
+    parser.add_argument('--comm_timestamp_bits', type=int, default=16)
+    parser.add_argument('--comm_cost_per_patch', type=float, default=0.01)
     parser.add_argument('--local_step_num', type=int, default=3, help="local_goal_step")
     parser.add_argument("--use_same_location", action='store_true', default=False,
                         help="use merge information")
@@ -115,6 +172,16 @@ def main(args):
     ###
     parser = get_config()
     all_args = parse_args(args, parser)
+
+    if all_args.communication_mode is not None and not all_args.share_policy:
+        parser.error("communication training currently requires shared policies")
+    if (
+        all_args.communication_mode is not None
+        and not all_args.use_centralized_V
+    ):
+        parser.error(
+            "communication training requires the centralized critic"
+        )
 
     if all_args.algorithm_name == "rmappo" or all_args.algorithm_name == "rmappg":
         assert (all_args.use_recurrent_policy or all_args.use_naive_recurrent_policy), ("check recurrent policy!")
@@ -180,7 +247,10 @@ def main(args):
     envs = make_train_env(all_args)
     eval_envs = make_eval_env(all_args) if all_args.use_eval else None
     num_agents = all_args.num_agents
-    all_args.episode_length = all_args.max_steps//all_args.local_step_num
+    if all_args.communication_mode is not None:
+        all_args.episode_length = all_args.max_steps
+    else:
+        all_args.episode_length = all_args.max_steps//all_args.local_step_num
 
     config = {
         "all_args": all_args,
