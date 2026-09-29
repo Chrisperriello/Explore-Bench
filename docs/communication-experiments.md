@@ -160,9 +160,15 @@ selection from changing the action meaning.
 8. Confirm two simultaneous valid sends collide only in `shared_collision`.
 9. Confirm collision attempts reduce tokens, budget, and reward.
 10. Confirm the planner consumes each actor's belief rather than the true merged
-   map.
-11. Confirm actor and critic tensors have the documented information boundary.
-12. Run a short seeded job twice and compare communication metrics.
+   map by placing an unseen free shortcut in the ground-truth map.
+11. Confirm an equal-timestamp local observation wins deterministically over a
+   conflicting delivered patch.
+12. Confirm repeated collisions drain every sender's budget on schedule and
+   leave silence as the only available action after exhaustion.
+13. Confirm a message sent in one vectorized environment never changes another
+   environment's beliefs, queue, or metrics.
+14. Confirm actor and critic tensors have the documented information boundary.
+15. Run a short seeded job twice and compare communication metrics.
 
 Unit tests cover the broker invariants and mixed-action masking. A short training
 smoke test is still necessary in the configured MAPPO environment before a full
