@@ -19,8 +19,11 @@ from sensors import (
 )
 from communication import (
     COMMUNICATION_MODES,
+    FREE,
     MAP_PATCH,
+    OCCUPIED,
     SILENCE,
+    UNKNOWN,
     CommunicationBroker,
     CommunicationConfig,
 )
@@ -186,6 +189,15 @@ class GridEnv(gym.Env):
         if self.communication_broker is None:
             return self.complete_map
         return self.communication_broker.belief_maps[agent_id]
+
+    def _navigation_map(self, agent_id):
+        if self.communication_broker is None:
+            return self.gt_map
+        navigation_map = np.array(
+            self.communication_broker.belief_maps[agent_id], copy=True
+        )
+        navigation_map[navigation_map == UNKNOWN] = OCCUPIED
+        return navigation_map
 
     def _transmit_traditional_communication(self):
         if self.communication_broker is None:
@@ -465,8 +477,11 @@ class GridEnv(gym.Env):
                 flag = True
                 pass
             else:
-                if self.gt_map[robotGoal[0], robotGoal[1]] == 254 and self.gt_map[self.agent_pos[i][0], self.agent_pos[i][1]] == 254:
-                    global_plan = self.Astar_global_planner(self.agent_pos[i], robotGoal)   
+                navigation_map = self._navigation_map(i)
+                if navigation_map[robotGoal[0], robotGoal[1]] == FREE and navigation_map[self.agent_pos[i][0], self.agent_pos[i][1]] == FREE:
+                    global_plan = self.Astar_global_planner(
+                        self.agent_pos[i], robotGoal, navigation_map
+                    )
                     pose = self.naive_local_planner(global_plan)
                     self.path_log[0].extend(pose)
                     self.agent_pos[i] = pose[-1][0]
@@ -1007,10 +1022,12 @@ class GridEnv(gym.Env):
                 pass
         return False
     
-    def Astar_global_planner(self, start, goal):
+    def Astar_global_planner(self, start, goal, planning_map=None):
         # start_pos = self.continuous_to_discrete(start)
         # goal_pos = self.continuous_to_discrete(goal)
-        astar = AStar(tuple(start), tuple(goal), self.gt_map, "euclidean")
+        if planning_map is None:
+            planning_map = self.gt_map
+        astar = AStar(tuple(start), tuple(goal), planning_map, "euclidean")
         # plot = plotting.Plotting(s_start, s_goal)
         path, visited = astar.searching()
         # vis_map = self.plot_path(path)
@@ -1286,8 +1303,11 @@ class GridEnv(gym.Env):
                 flag = True
                 pass
             else:
-                if self.gt_map[robotGoal[0], robotGoal[1]] == 254 and self.gt_map[self.agent_pos[i][0], self.agent_pos[i][1]] == 254:
-                    global_plan = self.Astar_global_planner(self.agent_pos[i], robotGoal)   
+                navigation_map = self._navigation_map(i)
+                if navigation_map[robotGoal[0], robotGoal[1]] == FREE and navigation_map[self.agent_pos[i][0], self.agent_pos[i][1]] == FREE:
+                    global_plan = self.Astar_global_planner(
+                        self.agent_pos[i], robotGoal, navigation_map
+                    )
                     pose = self.naive_local_planner(global_plan)
                     self.agent_pos[i] = pose[1][0]
                     self.path_log[i].append(self.agent_pos[i])
@@ -1573,8 +1593,11 @@ class GridEnv(gym.Env):
                 flag = True
                 pass
             else:
-                if self.gt_map[robotGoal[0], robotGoal[1]] == 254 and self.gt_map[self.agent_pos[i][0], self.agent_pos[i][1]] == 254:
-                    global_plan = self.Astar_global_planner(self.agent_pos[i], robotGoal)   
+                navigation_map = self._navigation_map(i)
+                if navigation_map[robotGoal[0], robotGoal[1]] == FREE and navigation_map[self.agent_pos[i][0], self.agent_pos[i][1]] == FREE:
+                    global_plan = self.Astar_global_planner(
+                        self.agent_pos[i], robotGoal, navigation_map
+                    )
                     pose = self.naive_local_planner(global_plan)
                     self.agent_pos[i] = pose[1][0]
                     self.path_log[i].append(self.agent_pos[i])
