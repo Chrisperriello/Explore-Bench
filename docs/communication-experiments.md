@@ -38,6 +38,14 @@ contract, while `perfect` uses the new actor/critic architecture with immediate
 belief synchronization. Their difference estimates architecture and retraining
 effects unrelated to channel constraints.
 
+For standalone planners there is an additional distinction. With communication
+omitted, the legacy navigation helper retains its original ground-truth route
+map. Communication-enabled modes use delivered beliefs and treat unknown cells
+as blocked. Compare legacy and `perfect` map fusion under fixed trajectories
+before interpreting an end-to-end coverage difference as a communication
+effect. The staged comparison is specified in the
+[communication validation plan](communication-validation-plan.md).
+
 ## Default Treatment
 
 Use the documented defaults as the main treatment:
@@ -170,7 +178,20 @@ selection from changing the action meaning.
    environment's beliefs, queue, or metrics.
 14. Confirm actor and critic tensors have the documented information boundary.
 15. Run a short seeded job twice and compare communication metrics.
+16. Send a delayed patch just before one in-process vector environment resets;
+    confirm that no queue, resource, metric, peer state, or message crosses the
+    episode boundary while another environment continues.
+17. Run standalone round-robin on `shared_collision` and require zero
+    collisions, nonzero transmissions, and nonzero deliveries.
+18. Compare legacy merged maps with `perfect` beliefs under fixed sensor frames,
+    then separately locate the first divergence in a seeded standalone cost run.
 
-Unit tests cover the broker invariants and mixed-action masking. A short training
-smoke test is still necessary in the configured MAPPO environment before a full
+Detailed automated coverage and remaining work are tracked in the
+[communication validation plan](communication-validation-plan.md). The collapse
+conditions currently have individual final-state tests but still require the
+planned stepwise parametrized comparison. Planner leakage, timestamp ties, and
+in-process vector isolation are verified. Episode reset isolation and the
+legacy/perfect standalone comparison remain planned, while incremental token
+refill and explicit shared-delivery metrics are partial. A short training smoke
+test is still necessary in the configured MAPPO environment before a full
 experiment campaign.
