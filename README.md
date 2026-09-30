@@ -214,8 +214,9 @@ python train/train_grid.py \
 
 Omitting `--communication_mode` retains the legacy Level-0 interface. See the
 [communication model](docs/level0-communication.md),
-[design decisions](docs/communication-decisions.md), and
-[experiment protocol](docs/communication-experiments.md) for semantics,
+[design decisions](docs/communication-decisions.md),
+[experiment protocol](docs/communication-experiments.md), and
+[validation plan](docs/communication-validation-plan.md) for semantics,
 rationale, limitations, and thesis-ready comparisons.
 
 ## Evaluate Exploration Approaches in Grid-based Simulator (Level-0)
