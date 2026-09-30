@@ -23,6 +23,12 @@ The ROS/Gazebo Level-1 communication path is intentionally unchanged. A future
 adapter can translate the same semantic messages to a real transport without
 changing their experimental meaning.
 
+Every environment owns its broker. Resetting an episode clears the delivery
+queue and rebuilds tokens, budgets, cooldowns, metrics, peer state, timestamps,
+and beliefs. The implementation performs those resets today; the remaining
+asynchronous vector-reset regression test is tracked in the
+[communication validation plan](communication-validation-plan.md).
+
 ## Decision Timeline
 
 For decision `t`, the environment performs these operations in order:
@@ -163,8 +169,9 @@ Weights & Biases logging despite its name.
 
 ## Standalone Baselines
 
-The cost and MMPF planners use each robot's communication-derived belief instead
-of the omniscient merged map. They support three fixed transmit protocols:
+When communication is enabled, the cost and MMPF planners use each robot's
+communication-derived belief instead of the omniscient merged map. They support
+three fixed transmit protocols:
 
 - `round_robin`: the next eligible robot sends its best patch;
 - `always`: every robot attempts its best patch per slot;
@@ -183,6 +190,13 @@ python GridEnv.py cost 2 \
 
 `always` is deliberately simple. Under `shared_collision` it exposes the cost
 of uncoordinated access rather than serving as a competitive scheduler.
+
+When communication is omitted, the standalone legacy path retains its original
+ground-truth navigation map. Consequently, legacy and `perfect` may follow
+different paths even if their merged maps contain identical sensed information.
+Use legacy to reproduce the old program, but use a common belief-limited planner
+for a fair channel comparison. The validation protocol first compares fusion
+under fixed trajectories and then performs a separate seeded end-to-end run.
 
 ## Logged Metrics
 
@@ -204,3 +218,15 @@ preserved across vector-environment resets so the last step is included.
   and which candidate to send, not arbitrary compression.
 - Radio decisions occur once per high-level environment decision, even when the
   local planner traverses several cells during that decision.
+
+## Validation Status
+
+The repository already verifies planner leakage, local and remote timestamp
+ties, and broker isolation inside the in-process vector wrapper. Individual
+tests also cover 100% loss, latency beyond TTL, zero budget, and episode-long
+cooldown, although a single stepwise equivalence harness remains planned. Token
+recovery and standalone round-robin delivery are covered indirectly and will be
+strengthened with rate and metric assertions. Episode-reset isolation and the
+staged legacy/perfect standalone comparison remain open. See the
+[communication validation plan](communication-validation-plan.md) for exact
+acceptance criteria and test locations.
