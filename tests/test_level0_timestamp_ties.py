@@ -47,6 +47,44 @@ class TimestampTieTests(unittest.TestCase):
 
         self.assertEqual(outcomes, [FREE] * 10)
 
+    def test_remote_tie_is_independent_of_sender_order(self):
+        def receiver_value(first_value, second_value):
+            maps = [
+                np.full((16, 16), UNKNOWN, dtype=np.uint8)
+                for _ in range(3)
+            ]
+            maps[0][0:8, 0:8] = FREE
+            maps[1][0:8, 0:8] = FREE
+            maps[0][3, 3] = first_value
+            maps[1][3, 3] = second_value
+            positions = [[2, 2], [4, 4], [6, 6]]
+            headings = [0, 2, 1]
+            config = CommunicationConfig(
+                mode=PARALLEL,
+                candidate_count=2,
+                radio_range_cells=float("inf"),
+                latency_min_steps=0,
+                latency_max_steps=0,
+                cooldown_steps=0,
+                bucket_capacity_bits=1000,
+                bucket_refill_bits=0,
+                episode_budget_bits=2000,
+            )
+            broker = CommunicationBroker(config, 3, seed=11)
+            broker.reset(16, 16, 20, maps, positions, headings)
+
+            broker.transmit(
+                [MAP_PATCH, MAP_PATCH, SILENCE], positions, headings
+            )
+            self.assertEqual(broker.belief_timestamps[2][3, 3], 0)
+            return int(broker.belief_maps[2][3, 3])
+
+        occupied_then_free = receiver_value(OCCUPIED, FREE)
+        free_then_occupied = receiver_value(FREE, OCCUPIED)
+
+        self.assertEqual(occupied_then_free, OCCUPIED)
+        self.assertEqual(free_then_occupied, OCCUPIED)
+
 
 if __name__ == "__main__":
     unittest.main()

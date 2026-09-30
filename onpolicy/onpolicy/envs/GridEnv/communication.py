@@ -210,10 +210,12 @@ class CommunicationBroker:
             np.array(grid, dtype=np.uint8, copy=True) for grid in private_maps
         ]
         self.belief_timestamps = []
+        self.belief_local_timestamps = []
         for grid in self.belief_maps:
             timestamps = np.full(grid.shape, -1, dtype=np.int64)
             timestamps[grid != UNKNOWN] = 0
             self.belief_timestamps.append(timestamps)
+            self.belief_local_timestamps.append(np.array(timestamps, copy=True))
         self.last_broadcast_maps = [
             np.full((self.width, self.height), UNKNOWN, dtype=np.uint8)
             for _ in range(self.num_agents)
@@ -490,7 +492,22 @@ class CommunicationBroker:
                 timestamps = self.belief_timestamps[receiver][
                     row:row_end, column:column_end
                 ]
-                update = (source != UNKNOWN) & (message.sent_step > timestamps)
+                local_timestamps = self.belief_local_timestamps[receiver][
+                    row:row_end, column:column_end
+                ]
+                source_priority = np.where(
+                    source == OCCUPIED, 2, np.where(source == FREE, 1, 0)
+                )
+                target_priority = np.where(
+                    target == OCCUPIED, 2, np.where(target == FREE, 1, 0)
+                )
+                newer = message.sent_step > timestamps
+                remote_tie = (message.sent_step == timestamps) & (
+                    local_timestamps != message.sent_step
+                )
+                update = (source != UNKNOWN) & (
+                    newer | (remote_tie & (source_priority > target_priority))
+                )
                 target[update] = source[update]
                 timestamps[update] = message.sent_step
             self._metrics["delivered_messages"] += 1
@@ -503,6 +520,7 @@ class CommunicationBroker:
             known = private_map != UNKNOWN
             self.belief_maps[agent_id][known] = private_map[known]
             self.belief_timestamps[agent_id][known] = self.current_step
+            self.belief_local_timestamps[agent_id][known] = self.current_step
 
     def _synchronize_perfect(self, private_maps, positions, headings):
         merged = np.full((self.width, self.height), UNKNOWN, dtype=np.uint8)
