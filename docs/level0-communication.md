@@ -40,7 +40,13 @@ For decision `t`, the environment performs these operations in order:
 A latency of zero delivers the send-time snapshot during the transmission phase.
 A latency of one means that data selected at decision `t` first appears after
 the broker advances to `t + 1`. A delayed map patch cannot overwrite a newer
-local observation because map cells are fused by timestamp.
+local observation because map cells are fused by timestamp. A local observation
+also wins a tie against a remote patch. Equal-time remote conflicts use the
+fixed priority occupied, then free, then unknown, independently of delivery
+order. Perfect mode instead gives occupied cells priority across its complete
+instantaneous merge because that merge has no receiver-local provenance. This
+difference is inert with noiseless sensing but must be considered before adding
+sensor noise.
 
 ## Semantic Messages
 
@@ -111,7 +117,8 @@ training reward = task reward - communication cost
 Invalid actions caused by cooldown or exhausted resources are masked before
 sampling and are rejected again by the broker. An explicit episode budget of
 zero disables all transmissions and is useful as a no-communication control.
-Silence always remains valid.
+Tokens refill at each broker advance and can reopen a temporarily closed mask.
+The episode budget never refills, and silence always remains valid.
 
 ## Information Available to the Policy
 
