@@ -97,17 +97,26 @@ Why:
 
 This is not a claim about a specific radio's throughput. Thesis results must
 describe these values as simulation parameters, not physical-layer measurements.
-Repeated collisions must exhaust tokens and episode budget on the same schedule
-as successful attempts. Once either resource is exhausted, the action mask must
-leave silence as the only available choice.
+Repeated collisions must consume tokens and episode budget on the same schedule
+as successful attempts. Tokens refill up to the configured capacity, so the
+action mask can reopen after a temporary token shortage. The episode budget
+never refills; once it cannot fund any message, silence remains the only choice
+for the rest of the episode.
 
 ## Decision 5: Snapshot at Send, Latest Timestamp Wins
 
 Payloads copy the sender state when the action is taken. A receiver applies a map
-cell only when the message timestamp is newer than its current cell timestamp.
-On an equal timestamp, the receiver keeps its existing value. This makes a local
-observation authoritative over a simultaneous remote claim and resolves ties
-without queue-order dependence.
+cell when the message timestamp is newer than its current cell timestamp. A
+local observation wins an equal-timestamp tie against a remote claim. Two
+equal-timestamp remote claims use the fixed priority occupied, then free, then
+unknown, so sender and queue order cannot change the result.
+
+Perfect mode has no receiver-local provenance during its instantaneous merge,
+so occupied wins every simultaneous conflict, including one between private
+maps. The constrained modes deliberately preserve an equally recent local
+observation instead. Noiseless sensing should not create a real disagreement;
+the distinction must be revisited or retained explicitly when sensor noise is
+introduced.
 
 Why:
 
