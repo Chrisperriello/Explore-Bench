@@ -35,6 +35,14 @@ The isolation requirement is tested by transmitting in one member of a vector
 environment and confirming that the other member's belief and metrics remain
 unchanged.
 
+Broker ownership also defines the episode boundary. `reset` discards queued
+messages and reconstructs tokens, budgets, cooldowns, metrics, peer state, and
+beliefs from the new episode. Because an in-process vector wrapper can reset one
+member while another continues, asynchronous reset isolation requires a
+separate validation beyond the existing cross-environment delivery test. That
+work is specified in the
+[communication validation plan](communication-validation-plan.md).
+
 Rejected alternative: a background thread or socket-like service. It would be
 appropriate for wall-clock robotics integration, but it adds concurrency without
 improving the Level-0 research abstraction.
@@ -142,10 +150,12 @@ Why:
 - Keeping actor and critic conversion explicit makes leakage auditable.
 
 The principal validity check is not merely that a private map exists. The
-navigation planner must also consume the actor's belief map. Both the learned
-runner and standalone planners now do so. Unknown belief cells are treated as
-blocked for route planning, even when the corresponding ground-truth cells form
-a shorter free corridor.
+navigation planner must also consume the actor's belief map.
+Communication-enabled learned and standalone planners do so. Unknown belief
+cells are treated as blocked for route planning, even when the corresponding
+ground-truth cells form a shorter free corridor. Communication-disabled paths
+retain their original ground-truth navigation behavior solely as legacy
+reproduction controls.
 
 ## Decision 7: Communication Is Part of the Joint Action
 
@@ -178,6 +188,27 @@ Why:
 The coefficient is not universal. Results should include a cost sweep or report
 a Pareto frontier rather than claim one default value is optimal.
 
+## Decision 9: Separate Legacy Reproduction From Fair Comparison
+
+The legacy path is preserved to reproduce the original program, including its
+observation contract and standalone use of the ground-truth navigation map.
+`perfect` is an information upper bound inside the new belief-limited execution
+contract. These controls should not be declared equivalent from similar final
+coverage alone.
+
+Why:
+
+- A reproduction control answers whether the old result can still be obtained.
+- A fair channel control holds the planner information boundary constant.
+- A fixed-trajectory fusion test can isolate map merging from navigation.
+- A stepwise standalone comparison can identify the first semantic divergence.
+
+If legacy and `perfect` differ, first compare their merged maps while holding
+sensor frames and positions fixed. If those maps agree but planned paths differ,
+the cause is the planner boundary rather than the broker merge. Preserve that
+difference in the named legacy control and use a common belief-limited planner
+for causal claims about communication.
+
 ## Assumptions and Threats to Validity
 
 - One radio slot equals one high-level policy decision, not one second.
@@ -197,6 +228,10 @@ a Pareto frontier rather than claim one default value is optimal.
 
 These are controlled abstractions, not defects to hide. Each should appear in
 the thesis methodology and limitations sections.
+
+The current evidence for these decisions, including partial and planned tests,
+is maintained in the
+[communication validation plan](communication-validation-plan.md).
 
 ## Extension Criteria
 
