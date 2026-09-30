@@ -162,9 +162,10 @@ selection from changing the action meaning.
 10. Confirm the planner consumes each actor's belief rather than the true merged
    map by placing an unseen free shortcut in the ground-truth map.
 11. Confirm an equal-timestamp local observation wins deterministically over a
-   conflicting delivered patch.
-12. Confirm repeated collisions drain every sender's budget on schedule and
-   leave silence as the only available action after exhaustion.
+   conflicting delivered patch, and permuting two conflicting remote senders
+   does not change the receiver's result.
+12. Confirm patch collisions drain every sender's tokens and budget, token
+   refill reopens the action mask, and episode-budget exhaustion never recovers.
 13. Confirm a message sent in one vectorized environment never changes another
    environment's beliefs, queue, or metrics.
 14. Confirm actor and critic tensors have the documented information boundary.
