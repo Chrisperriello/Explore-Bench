@@ -1229,19 +1229,30 @@ class GridEnv(gym.Env):
             Dis2Frs = []
             free_cluster_center = []
             for i in range(len(cluster_center)):
-                # find the nearest free grid
+                reachable_center = None
+                reachable_distance = None
                 for x in range(3):
                     for y in range(3):
-                        # if self.built_map[e][cluster_center[i][0]-1+x, cluster_center[i][1]-1+y] == 254:
-                        if planning_map[cluster_center[i][0]-1+x, cluster_center[i][1]-1+y] == 254:
-                            Dis2Frs.append(curr_dismap[cluster_center[i][0]-1+x, cluster_center[i][1]-1+y])
-                            free_cluster_center.append([cluster_center[i][0]-1+x, cluster_center[i][1]-1+y])
+                        row = cluster_center[i][0] - 1 + x
+                        column = cluster_center[i][1] - 1 + y
+                        distance = curr_dismap[row, column]
+                        if planning_map[row, column] == FREE and distance > 0:
+                            reachable_center = [row, column]
+                            reachable_distance = distance
                             break
                     else:
                         continue
                     break
-            
-            map_goal.append(free_cluster_center[Dis2Frs.index(min(Dis2Frs))])
+                if reachable_center is not None:
+                    free_cluster_center.append(reachable_center)
+                    Dis2Frs.append(reachable_distance)
+
+            if free_cluster_center:
+                map_goal.append(
+                    free_cluster_center[Dis2Frs.index(min(Dis2Frs))]
+                )
+            else:
+                map_goal.append(self.agent_pos[e])
             # if len(free_cluster_center) == 0:
             #     map_goal.append(self.agent_pos[e])
             #     print("cannot detect valid frontiers")

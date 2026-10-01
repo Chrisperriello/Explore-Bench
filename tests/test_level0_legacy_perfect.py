@@ -172,6 +172,34 @@ class LegacyPerfectTests(unittest.TestCase):
         self.assertTrue(unseen_shortcut.intersection(legacy_path))
         self.assertFalse(unseen_shortcut.intersection(perfect_path))
 
+    def test_perfect_cost_step_handles_disconnected_known_regions(self):
+        map_path = (
+            Path(__file__).resolve().parents[1]
+            / "onpolicy"
+            / "onpolicy"
+            / "envs"
+            / "GridEnv"
+            / "datasets"
+            / "corner.pgm"
+        )
+        env = GridEnv(
+            0.1,
+            3.5,
+            2,
+            5,
+            str(map_path),
+            communication_config=CommunicationConfig(mode=PERFECT),
+            seed=41,
+        )
+        env.plot_map_with_path = lambda: None
+        env.reset_for_traditional()
+
+        env.step_for_cost()
+
+        self.assertEqual(env.num_step, 1)
+        for belief in env.communication_broker.belief_maps:
+            np.testing.assert_array_equal(belief, env.complete_map)
+
 
 if __name__ == "__main__":
     unittest.main()
