@@ -25,9 +25,9 @@ changing their experimental meaning.
 
 Every environment owns its broker. Resetting an episode clears the delivery
 queue and rebuilds tokens, budgets, cooldowns, metrics, peer state, timestamps,
-and beliefs. The implementation performs those resets today; the remaining
-asynchronous vector-reset regression test is tracked in the
-[communication validation plan](communication-validation-plan.md).
+and beliefs. An asynchronous in-process vector test verifies that this reset
+cannot discard a continuing environment's state or deliver an old message into
+a new episode.
 
 ## Decision Timeline
 
@@ -198,6 +198,11 @@ Use legacy to reproduce the old program, but use a common belief-limited planner
 for a fair channel comparison. The validation protocol first compares fusion
 under fixed trajectories and then performs a separate seeded end-to-end run.
 
+Perfect fusion may reveal a disconnected known region before the receiving
+agent knows a traversable route to it. The cost planner considers only frontier
+cells with a positive distance through known free space. If none are reachable,
+the agent holds position instead of passing an unreachable goal to A-star.
+
 ## Logged Metrics
 
 Training logs per-step attempted and delivered messages/bits, collisions, packet
@@ -221,12 +226,14 @@ preserved across vector-environment resets so the last step is included.
 
 ## Validation Status
 
-The repository already verifies planner leakage, local and remote timestamp
-ties, and broker isolation inside the in-process vector wrapper. Individual
-tests also cover 100% loss, latency beyond TTL, zero budget, and episode-long
-cooldown, although a single stepwise equivalence harness remains planned. Token
-recovery and standalone round-robin delivery are covered indirectly and will be
-strengthened with rate and metric assertions. Episode-reset isolation and the
-staged legacy/perfect standalone comparison remain open. See the
+The repository verifies stepwise collapse to `none`, episode reset isolation,
+incremental token refill, planner leakage, local and remote timestamp ties,
+broker isolation inside the in-process vector wrapper, and explicit
+round-robin delivery on the shared channel. It also verifies that `perfect`
+matches legacy map fusion while their first standalone difference occurs at the
+navigation information boundary. See the
 [communication validation plan](communication-validation-plan.md) for exact
-acceptance criteria and test locations.
+acceptance criteria, test locations, and the latest execution record. The full
+suite, a headless standalone cost step, and a 40-timestep MAPPO shared-channel
+smoke currently pass. Repeat those runtime checks for every result-producing
+commit and environment.
