@@ -35,7 +35,8 @@ class StandaloneCommunicationTests(unittest.TestCase):
         )
         first = np.full((16, 16), UNKNOWN, dtype=np.uint8)
         second = np.full((16, 16), UNKNOWN, dtype=np.uint8)
-        first[0:8, 0:8] = FREE
+        first[8:16, 8:16] = FREE
+        second[0:8, 0:8] = FREE
         env.width = 16
         env.height = 16
         env.built_map = [first, second]
@@ -47,9 +48,16 @@ class StandaloneCommunicationTests(unittest.TestCase):
         env._reset_communication()
         env._transmit_traditional_communication()
         env._advance_traditional_communication()
+        env._transmit_traditional_communication()
+        env._advance_traditional_communication()
 
-        self.assertEqual(env.communication_broker.belief_maps[1][1, 1], FREE)
-        self.assertEqual(env.communication_metrics()["collision_messages"], 0)
+        self.assertEqual(env.communication_broker.belief_maps[1][9, 9], FREE)
+        self.assertEqual(env.communication_broker.belief_maps[0][1, 1], FREE)
+        metrics = env.communication_metrics()
+        self.assertEqual(metrics["attempted_messages"], 2)
+        self.assertEqual(metrics["transmitted_messages"], 2)
+        self.assertEqual(metrics["delivered_messages"], 2)
+        self.assertEqual(metrics["collision_messages"], 0)
 
 
 if __name__ == "__main__":
