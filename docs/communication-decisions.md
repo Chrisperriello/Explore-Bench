@@ -157,6 +157,14 @@ ground-truth cells form a shorter free corridor. Communication-disabled paths
 retain their original ground-truth navigation behavior solely as legacy
 reproduction controls.
 
+Perfect sharing can merge two known regions before an individual agent knows a
+free route between them. The standalone cost planner therefore filters frontier
+candidates through its belief-derived distance map. A free candidate is usable
+only when it has a positive reachable distance; if no candidate qualifies, the
+agent stays in place for that decision. Treating an unreachable zero distance as
+optimal would crash path extraction and would not be a defensible communication
+assumption.
+
 ## Decision 7: Communication Is Part of the Joint Action
 
 The policy action is a two-dimensional continuous navigation output plus one
