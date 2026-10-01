@@ -17,21 +17,23 @@ check is not complete merely because the relevant code path exists.
 
 | Requirement | Status | Existing evidence | Remaining work |
 | --- | --- | --- | --- |
-| Communication-disabled collapse | Partial | `test_total_packet_loss_produces_the_same_maps_as_none`, `test_zero_budget_produces_the_same_maps_as_none`, `test_episode_long_cooldown_blocks_sharing_after_first_step`, and `test_latency_longer_than_ttl_never_delivers` in [`test_level0_communication.py`](../tests/test_level0_communication.py) | Use one parametrized harness and compare every belief map with a `none` run after every step. |
-| Episode-boundary reset | Planned | `CommunicationBroker.reset` clears broker state, and `InfoDummyVecEnv` resets completed members independently. | Queue a message before one vector member terminates and prove that no state or delivery crosses into its next episode. |
+| Communication-disabled collapse | Verified | [`test_level0_collapse_equivalence.py`](../tests/test_level0_collapse_equivalence.py) compares 100% loss, expired latency, zero budget, and episode-long cooldown with `none` after every step. | Keep the failure-specific metric assertions with the map-equivalence gate. |
+| Episode-boundary reset | Verified | [`test_level0_episode_resets.py`](../tests/test_level0_episode_resets.py) resets one `InfoDummyVecEnv` member while another continues and delivers its queued patch. | Keep asynchronous horizons and the in-process wrapper explicit. |
 | Planner information leakage | Verified | [`test_level0_planner_leakage.py`](../tests/test_level0_planner_leakage.py) places an unseen free shortcut in the true map and proves the `none` planner avoids it. | Keep as a regression gate. |
 | Equal-timestamp fusion | Verified | [`test_level0_timestamp_ties.py`](../tests/test_level0_timestamp_ties.py) covers local-versus-remote ties and conflicting remote senders in both sender assignments. | Revisit the declared priority only when noisy sensors are introduced. |
-| Token-bucket recovery | Partial | `test_patch_collision_refills_tokens_but_not_episode_budget` in [`test_level0_collision_budget.py`](../tests/test_level0_collision_budget.py) proves recovery after a patch collision. | Prove incremental refill during silence at the configured rate, independently of episode-budget recovery. |
+| Token-bucket recovery | Verified | [`test_level0_token_bucket.py`](../tests/test_level0_token_bucket.py) checks every silent refill step while the episode budget remains fixed. | Keep the refill amount smaller than and non-dividing into the patch size. |
 | Vector-environment isolation | Verified | [`test_level0_vector_isolation.py`](../tests/test_level0_vector_isolation.py) uses in-process `InfoDummyVecEnv` and inspects distinct broker instances. | Keep the in-process wrapper explicit. A subprocess test would not exercise shared Python state. |
-| Shared-channel delivery | Partial | `test_round_robin_protocol_advances_shared_broker` in [`test_level0_standalone_communication.py`](../tests/test_level0_standalone_communication.py) changes the receiving belief and records zero collisions. | Assert nonzero transmitted and delivered metrics directly over enough slots for both agents to send. |
-| Legacy versus perfect standalone cost | Planned | No automated comparison exists. | Separate map-fusion equivalence from end-to-end planner equivalence before interpreting a coverage difference. |
+| Shared-channel delivery | Verified | [`test_level0_standalone_communication.py`](../tests/test_level0_standalone_communication.py) schedules both agents, exchanges both private tiles, and asserts attempts, transmissions, deliveries, and zero collisions. | Keep learned-policy outcomes separate from broker functionality. |
+| Legacy versus perfect fusion | Verified | [`test_level0_legacy_perfect.py`](../tests/test_level0_legacy_perfect.py) compares fixed sensor frames, including conflicting cell claims. | Keep fusion isolated from route planning. |
+| Legacy versus perfect planner boundary | Verified | The same test uses a seeded standalone reset to locate the first divergence at `_navigation_map`, then proves its path effect with an unseen shortcut. | Treat legacy as an omniscient reproduction control, not a fair channel control. |
 
-The four collapse cases are individually tested today, so describing them as
-"not written" is no longer accurate. Their status remains partial because most
-of those tests compare only the final state, while the intended invariant is
-step-for-step equivalence with `none`.
+All code-level rows are now verified. The original individual collapse tests
+remain useful for focused diagnostics, while the parametrized harness provides
+the stronger step-for-step equivalence guarantee.
 
 ## Work Package 1: Stepwise Collapse to None
+
+**Status: Verified** by `test_level0_collapse_equivalence.py`.
 
 Create a parametrized broker test with cases for 100% packet loss, latency
 longer than TTL, zero episode budget, and an episode-long cooldown. Each case
@@ -47,6 +49,8 @@ increase `lost_messages`, expiry must increase `expired_messages`, and zero
 budget must keep `attempted_messages` at zero.
 
 ## Work Package 2: Episode Reset Isolation
+
+**Status: Verified** by `test_level0_episode_resets.py`.
 
 Use two probe environments inside `InfoDummyVecEnv`, with different episode
 lengths so only one member resets at a time. Send a delayed patch immediately
@@ -67,6 +71,8 @@ same Python process.
 
 ## Work Package 3: Incremental Token Refill
 
+**Status: Verified** by `test_level0_token_bucket.py`.
+
 Add a focused broker test without collisions. Spend one patch from a bucket
 whose capacity is exactly one patch and whose refill is a smaller, non-dividing
 number of bits. Request silence for subsequent decisions and assert after each
@@ -83,6 +89,8 @@ bucket again contains `patch_bits`. This test isolates rate limiting from the
 permanent episode allowance tested by the collision-budget suite.
 
 ## Work Package 4: Explicit Shared-Channel Delivery
+
+**Status: Verified** by `test_level0_standalone_communication.py`.
 
 Extend the standalone round-robin test rather than creating a duplicate. Run
 enough slots for each agent to become the selected sender and require:
@@ -101,6 +109,8 @@ useful delivery.
 
 ## Work Package 5: Legacy and Perfect Standalone Controls
 
+**Status: Verified** by `test_level0_legacy_perfect.py`.
+
 Legacy reproduction and fair communication comparison answer different
 questions. When standalone communication is omitted, `_navigation_map` retains
 the original behavior and returns `gt_map`. With communication enabled,
@@ -108,15 +118,17 @@ including `perfect`, navigation uses the agent belief and treats unknown cells
 as blocked. End-to-end coverage can therefore diverge even when the two merge
 procedures agree exactly.
 
-Validate these boundaries in two stages:
+The validation separates these boundaries in three stages:
 
 1. Hold positions and sensor frames fixed. After every sensing step, compare the
    legacy merged map with every `perfect` belief. This is the map-fusion
    equivalence test.
-2. Run standalone cost planners with the same deterministic map, seed, spawn,
-   sensor configuration, and step count. Compare selected goals, positions,
-   private maps, merged maps, and coverage after every step, and report the
-   first differing field.
+2. Reset standalone cost planners with the same deterministic map, seed, spawn,
+   and sensor configuration. Compare positions, directions, private maps,
+   merged maps, coverage, and selected cost goals before movement. The first
+   differing field is the navigation map at unseen free cells.
+3. Use a controlled unseen shortcut to prove that the navigation-map difference
+   changes the path while the sensed merge remains the same.
 
 If fusion matches but paths differ at `_navigation_map`, record legacy as an
 omniscient compatibility baseline rather than weakening `perfect` with true-map
@@ -137,6 +149,27 @@ Before a long experiment sweep:
    and communication metrics.
 5. Result notes must distinguish attempted messages, collisions, transmitted
    messages, in-range recipients, and delivered receiver-copies.
+
+## Latest Verification Record
+
+The completed implementation was checked in the Python 3.8 virtual environment:
+
+- the complete Python suite passed all 56 tests;
+- a headless standalone `perfect` cost step completed on `corner.pgm` with seed
+  41, produced 5,388 covered cells, and kept both beliefs equal to the merged
+  map;
+- a 40-timestep MAPPO `shared_collision` smoke completed two episodes and one
+  PPO update on CPU, ending with a reported exploration ratio of `0.999589`.
+
+The first standalone smoke attempt exposed an unreachable-frontier defect:
+perfect fusion could reveal a disconnected known region, and zero-valued
+unreachable distances were selected as if they were shortest. The cost planner
+now selects only positively reachable frontier cells and holds position when no
+known route exists. `test_perfect_cost_step_handles_disconnected_known_regions`
+preserves that regression.
+
+These results satisfy the current execution gate. They must be repeated for the
+exact commit, environment, and configuration used to produce thesis results.
 
 Implementation should be split by invariant: collapse equivalence, episode
 reset isolation, refill rate, shared delivery metrics, legacy/perfect fusion,
