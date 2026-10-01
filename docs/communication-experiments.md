@@ -186,12 +186,13 @@ selection from changing the action meaning.
 18. Compare legacy merged maps with `perfect` beliefs under fixed sensor frames,
     then separately locate the first divergence in a seeded standalone cost run.
 
-Detailed automated coverage and remaining work are tracked in the
-[communication validation plan](communication-validation-plan.md). The collapse
-conditions currently have individual final-state tests but still require the
-planned stepwise parametrized comparison. Planner leakage, timestamp ties, and
-in-process vector isolation are verified. Episode reset isolation and the
-legacy/perfect standalone comparison remain planned, while incremental token
-refill and explicit shared-delivery metrics are partial. A short training smoke
-test is still necessary in the configured MAPPO environment before a full
-experiment campaign.
+Detailed automated coverage is tracked in the
+[communication validation plan](communication-validation-plan.md). Stepwise
+collapse, episode reset isolation, incremental refill, planner leakage,
+timestamp ties, in-process vector isolation, shared-channel delivery, and the
+legacy/perfect boundary are verified by focused tests. The legacy/perfect test
+locates the first difference at the navigation map before movement instead of
+misattributing later coverage divergence to fusion. The latest headless
+standalone cost smoke and 40-timestep MAPPO `shared_collision` smoke both pass;
+repeat them for the exact commit and environment used by each experiment
+campaign.
