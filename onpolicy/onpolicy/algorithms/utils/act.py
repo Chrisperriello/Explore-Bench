@@ -8,6 +8,14 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class ACTLayer(nn.Module):
+    """Build and evaluate policy distributions for supported Gym actions.
+
+    Communication-enabled GridEnv uses a mixed tuple flattened as
+    ``[motion_x, motion_y, communication]``.  The first component is sampled
+    from a diagonal Gaussian and the last from a categorical distribution.
+    Only the categorical head receives ``available_actions`` because radio
+    feasibility must not alter the continuous navigation distribution.
+    """
     def __init__(self, action_space, inputs_dim, use_orthogonal, gain):
         super(ACTLayer, self).__init__()
         self.multidiscrete_action = False
@@ -40,6 +48,11 @@ class ACTLayer(nn.Module):
                 inputs_dim, discrete_dim, use_orthogonal, gain)])
     
     def forward(self, x, available_actions=None, deterministic=False):
+        """Sample (or choose modes for) actions and return their log probability.
+
+        For a mixed action, component log probabilities are summed.  This is
+        the log probability of the factorized joint policy used by PPO.
+        """
         if self.mixed_action :
             actions = []
             action_log_probs = []
@@ -83,6 +96,7 @@ class ACTLayer(nn.Module):
         return actions, action_log_probs
 
     def get_probs(self, x, available_actions=None):
+        """Return concatenated component probabilities for inspection/logging."""
         if self.mixed_action or self.multidiscrete_action:
             action_probs = []
             for index, action_out in enumerate(self.action_outs):
@@ -104,6 +118,11 @@ class ACTLayer(nn.Module):
         return action_probs
 
     def evaluate_actions(self, x, action, available_actions=None, active_masks=None):
+        """Re-evaluate stored actions for PPO using the collection-time mask.
+
+        Mixed actions are split using ``continuous_dim`` and return one summed
+        joint log probability, matching :meth:`forward` and replay storage.
+        """
         if self.mixed_action:
             a, b = action.split((self.continuous_dim, 1), -1)
             b = b.long()

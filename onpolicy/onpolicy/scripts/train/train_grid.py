@@ -21,6 +21,11 @@ from onpolicy.envs.env_wrappers import InfoSubprocVecEnv, InfoDummyVecEnv, Choos
 
 
 def make_communication_config(all_args):
+    """Translate CLI arguments into one validated broker configuration.
+
+    Returning ``None`` is intentional: it selects the untouched legacy action,
+    observation, and ground-truth planning path rather than a silent broker.
+    """
     if all_args.communication_mode is None:
         return None
     return CommunicationConfig(
@@ -42,6 +47,7 @@ def make_communication_config(all_args):
 
 
 def make_grid_env(all_args, sensor_configs, visualization=False):
+    """Construct legacy or communication-aware GridEnv from parsed arguments."""
     communication_config = make_communication_config(all_args)
     if communication_config is None:
         return GridEnv(
@@ -70,6 +76,7 @@ def make_grid_env(all_args, sensor_configs, visualization=False):
 
 
 def make_train_env(all_args):
+    """Create deterministically seeded vector environments for training."""
     sensor_configs = sensor_configs_from_values(
         all_args.sensor_types, all_args.sensor_ranges, all_args.num_agents, 3.0
     )
@@ -91,6 +98,7 @@ def make_train_env(all_args):
 
 
 def make_eval_env(all_args):
+    """Create separately seeded vector environments for policy evaluation."""
     sensor_configs = sensor_configs_from_values(
         all_args.sensor_types, all_args.sensor_ranges, all_args.num_agents, 3.0
     )

@@ -195,6 +195,13 @@ class GridEnv(gym.Env):
         return [seed]
 
     def _navigation_map(self, agent_id):
+        """Return the map that A* is permitted to use for ``agent_id``.
+
+        Legacy runs retain their original ground-truth planner.  Communication
+        treatments copy the agent's delivered belief and conservatively mark
+        unknown cells occupied.  This is the enforcement point that prevents
+        an actor from routing through unseen ground-truth free space.
+        """
         if not self.communication_enabled:
             return self.gt_map
         navigation_map = np.array(
@@ -204,6 +211,18 @@ class GridEnv(gym.Env):
         return navigation_map
 
     def _add_communication_info(self, info, penalties=None, attempted_bits=None):
+        """Attach broker state needed by the runner, evaluator, and logger.
+
+        The raw ``info`` dictionary is privileged environment output.  It is
+        not itself an actor observation.  ``GridRunner`` later constructs the
+        actor view from local/delivered fields and the critic view from the
+        explicitly global fields.
+
+        Args:
+            info: Per-step environment information dictionary to extend.
+            penalties: Per-sender cost charged for this step's attempts.
+            attempted_bits: Per-sender logical bits attempted this step.
+        """
         if not self.communication_enabled:
             return
         broker = self.communication_broker
@@ -386,6 +405,8 @@ class GridEnv(gym.Env):
                 raise ValueError(
                     "communication-enabled GridEnv.step expects motion_goals and comm_actions"
                 )
+            # Communication is selected from the pre-movement belief.  The
+            # broker snapshots the payload here, before motion and new sensing.
             communication_metrics_before = self.communication_broker.metrics()
             communication_penalties, communication_attempted_bits = (
                 self.communication_broker.transmit(
@@ -455,6 +476,9 @@ class GridEnv(gym.Env):
         self.complete_map[temp == 0] = 205
 
         if self.communication_enabled:
+            # Advancing after motion/sensing gives latency a decision-step
+            # meaning.  New direct observations are fused before due remote
+            # packets, so equally recent local evidence remains authoritative.
             self.communication_broker.advance(
                 self.built_map, self.agent_pos, self.agent_dir
             )
@@ -555,6 +579,8 @@ class GridEnv(gym.Env):
             rewards = np.expand_dims(np.array([info['merge_explored_reward'] for _ in range(self.num_agents)]), axis=1)
         info['task_rewards'] = np.array(rewards, copy=True)
         if self.communication_enabled:
+            # Preserve the original task reward in info so analysis can report
+            # exploration and communication cost separately.
             rewards = rewards - np.expand_dims(communication_penalties, axis=1)
 
         obs = np.array(obs)

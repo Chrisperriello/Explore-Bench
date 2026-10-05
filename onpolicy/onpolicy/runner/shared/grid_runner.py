@@ -435,6 +435,26 @@ class GridRunner(Runner):
         return raw_obs, obs
 
     def _resize_communication_convert(self, dict_obs, infos, evaluation=False):
+        """Build separate decentralized-actor and centralized-critic inputs.
+
+        Actor observations contain the agent's private sensing, delivered
+        belief, last delivered peer poses with freshness, candidate-patch
+        features, local resource state, and identity.  They never contain true
+        unseen peer state.
+
+        Shared critic observations additionally contain team exploration,
+        current team positions/history, every agent belief, and global broker
+        progress.  This explicit conversion is the CTDE trust boundary.
+
+        Args:
+            dict_obs: Raw map observations returned by vector environments.
+            infos: Privileged environment information, one dictionary per env.
+            evaluation: Select evaluation rather than training position history.
+
+        Returns:
+            ``(raw_obs, obs, share_obs, available_actions)`` where the last
+            tensor masks only the categorical communication head.
+        """
         env_count = len(dict_obs)
         map_shape = (env_count, self.num_agents, 4, self.full_w, self.full_h)
         input_shape = (env_count, self.num_agents, 4, self.input_w, self.input_h)

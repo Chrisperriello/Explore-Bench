@@ -61,6 +61,8 @@ class SharedReplayBuffer(object):
         if act_space.__class__.__name__ == 'Discrete':
             self.available_actions = np.ones((self.episode_length + 1, self.n_rollout_threads, num_agents, act_space.n), dtype=np.float32)
         elif act_space.__class__.__name__ == 'Tuple':
+            # GridEnv's tuple is continuous motion plus one categorical radio
+            # action.  Only the categorical component has a feasibility mask.
             self.available_actions = np.ones((self.episode_length + 1, self.n_rollout_threads, num_agents, act_space[1].n), dtype=np.float32)
         else:
             self.available_actions = None
@@ -69,6 +71,8 @@ class SharedReplayBuffer(object):
 
         self.actions = np.zeros(
             (self.episode_length, self.n_rollout_threads, num_agents, act_shape), dtype=np.float32)
+        # ACTLayer sums the tuple components into one joint log probability,
+        # so PPO needs one stored scalar rather than one value per flat action.
         log_prob_shape = 1 if act_space.__class__.__name__ == 'Tuple' else act_shape
         self.action_log_probs = np.zeros(
             (self.episode_length, self.n_rollout_threads, num_agents, log_prob_shape), dtype=np.float32)
