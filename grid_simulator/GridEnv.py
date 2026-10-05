@@ -173,6 +173,11 @@ class GridEnv(gym.Env):
         return [seed]
 
     def _reset_communication(self):
+        """Reset broker state at the same boundary as the simulator episode.
+
+        Queued messages, beliefs, resources, cooldowns, peer poses, metrics,
+        and the fixed round-robin cursor must not cross episode boundaries.
+        """
         if self.communication_broker is None:
             return
         self.communication_broker.reset(
@@ -186,11 +191,24 @@ class GridEnv(gym.Env):
         self._round_robin_cursor = 0
 
     def _planning_map(self, agent_id):
+        """Return the map used to detect and rank exploration frontiers.
+
+        Legacy mode uses the historically merged map.  Every communication
+        treatment, including ``perfect``, uses the selected agent's belief so
+        channel comparisons share the new information boundary.
+        """
         if self.communication_broker is None:
             return self.complete_map
         return self.communication_broker.belief_maps[agent_id]
 
     def _navigation_map(self, agent_id):
+        """Return the map used for route validation and A* path extraction.
+
+        In communication treatments, unknown belief cells become occupied so
+        a robot cannot exploit an unseen corridor present only in ``gt_map``.
+        Legacy mode deliberately preserves the old omniscient behavior as a
+        reproduction control.
+        """
         if self.communication_broker is None:
             return self.gt_map
         navigation_map = np.array(
@@ -200,6 +218,13 @@ class GridEnv(gym.Env):
         return navigation_map
 
     def _transmit_traditional_communication(self):
+        """Choose and submit one fixed-protocol communication joint action.
+
+        ``round_robin`` selects the next sender able to afford a patch,
+        ``always`` requests a patch from every robot, and ``none`` leaves the
+        all-silence action unchanged.  These are transparent baselines for the
+        learned scheduler; they do not select pose messages.
+        """
         if self.communication_broker is None:
             return
         actions = np.full(self.num_agents, SILENCE, dtype=np.int64)
@@ -218,6 +243,7 @@ class GridEnv(gym.Env):
         )
 
     def _advance_traditional_communication(self):
+        """Advance the broker after the standalone planner moves and senses."""
         if self.communication_broker is None:
             return
         self.communication_broker.advance(
@@ -225,6 +251,7 @@ class GridEnv(gym.Env):
         )
 
     def communication_metrics(self):
+        """Return cumulative broker metrics, or an empty mapping in legacy mode."""
         if self.communication_broker is None:
             return {}
         return self.communication_broker.metrics()
@@ -1163,6 +1190,14 @@ class GridEnv(gym.Env):
         return frontiers, obstacles
 
     def get_goal_for_cost(self):
+        """Select each agent's nearest reachable frontier on its allowed map.
+
+        Communication treatments use per-agent beliefs.  A candidate must
+        have a positive distance in the known-free distance map; a free-looking
+        cell with distance zero may be disconnected rather than adjacent.  If
+        no reachable frontier exists, the robot holds position instead of
+        sending an invalid goal to A*.
+        """
         map_goal = []
         for e in range(self.num_agents):
             planning_map = self._planning_map(e)
@@ -1287,6 +1322,13 @@ class GridEnv(gym.Env):
         return np.array(map_goal)
 
     def step_for_cost(self):
+        """Execute one cost-planner decision and one logical radio slot.
+
+        The fixed communication protocol transmits before goal selection.
+        Movement and sensing then occur, after which the broker is advanced by
+        the existing end-of-step hook.  This mirrors the learned environment's
+        send/sense/deliver timeline.
+        """
         obs = []
         flag = False
         self.explored_each_map_t = []
@@ -1577,6 +1619,7 @@ class GridEnv(gym.Env):
         return np.array(map_goal)
 
     def step_for_mmpf(self):
+        """Execute one MMPF-planner decision and one logical radio slot."""
         obs = []
         flag = False
         self.explored_each_map_t = []
