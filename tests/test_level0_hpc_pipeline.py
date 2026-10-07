@@ -8,10 +8,13 @@ from pathlib import Path
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 HPC_TASKS = REPOSITORY_ROOT / "hpc" / "tasks"
+HPC_MONITOR = REPOSITORY_ROOT / "hpc" / "monitor"
 sys.path.insert(0, str(HPC_TASKS))
+sys.path.insert(0, str(HPC_MONITOR))
 
 from generate_level0_tasks import build_rows, load_suite, write_rows  # noqa: E402
 from run_level0_task import collector_command, complete_runs  # noqa: E402
+from slurm_monitor import discover_log_job_ids, load_data_records, log_paths  # noqa: E402
 
 
 class Level0TaskTableTests(unittest.TestCase):
@@ -78,6 +81,46 @@ class Level0TaskRunnerTests(unittest.TestCase):
             )
 
             self.assertEqual(complete_runs(task_directory), [run_directory])
+
+
+class Level0MonitorTests(unittest.TestCase):
+    def test_nested_array_logs_and_running_task_status_are_discovered(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            log_directory = root / "logs" / "level0" / "test" / "original"
+            data_directory = root / "data" / "level0" / "test" / "original" / "task_000003"
+            log_directory.mkdir(parents=True)
+            data_directory.mkdir(parents=True)
+            output = log_directory / "level0-original-123_3.out"
+            error = log_directory / "level0-original-123_3.err"
+            output.write_text("running\n", encoding="utf-8")
+            error.write_text("", encoding="utf-8")
+            (data_directory / "task_status.json").write_text(
+                json.dumps(
+                    {
+                        "status": "running",
+                        "sensor": "omnidirectional",
+                        "slurm_job_id": "123_3",
+                        "task": {
+                            "method": "cost",
+                            "map_path": "datasets/corner.pgm",
+                            "seed": "4",
+                            "sensor_range": "3.5",
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            self.assertEqual(discover_log_job_ids(root / "logs"), {"123_3"})
+            self.assertEqual(
+                log_paths(root / "logs", "123_3"),
+                {"stdout": str(output), "stderr": str(error)},
+            )
+            record = load_data_records(root / "data")["123_3"]
+            self.assertEqual(record["status"], "running")
+            self.assertEqual(record["method"], "cost")
+            self.assertEqual(record["map"], "corner.pgm")
 
 
 if __name__ == "__main__":

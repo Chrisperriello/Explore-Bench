@@ -78,7 +78,9 @@ def discover_log_job_ids(log_root):
     identifiers = set()
     if not log_root.is_dir():
         return identifiers
-    for path in log_root.iterdir():
+    for path in log_root.rglob("*"):
+        if not path.is_file():
+            continue
         match = JOB_ID_PATTERN.search(path.name)
         if match:
             identifiers.add(match.group(1))
@@ -201,7 +203,7 @@ def read_last_episode(path):
 
 
 def load_data_records(data_root):
-    """Load the newest collector manifest associated with each job."""
+    """Load smoke manifests and per-array task status associated with jobs."""
     records = {}
     if not data_root.is_dir():
         return records
@@ -240,6 +242,68 @@ def load_data_records(data_root):
             "steps": str(episode.get("steps_executed", "")),
             "termination": str(episode.get("termination_reason", "")),
         }
+
+    for status_path in data_root.rglob("task_status.json"):
+        try:
+            with status_path.open(encoding="utf-8") as handle:
+                status = json.load(handle)
+        except (OSError, ValueError):
+            continue
+        array_job_id = str(status.get("slurm_array_job_id") or "")
+        array_task_id = str(status.get("slurm_array_task_id") or "")
+        if array_job_id and array_task_id:
+            job_id = "{}_{}".format(array_job_id, array_task_id)
+        else:
+            job_id = str(status.get("slurm_job_id") or "")
+        if not job_id:
+            continue
+
+        task = status.get("task", {})
+        run_text = str(status.get("run_directory") or "")
+        run_directory = Path(run_text) if run_text else None
+        manifest = {}
+        episode = {}
+        if run_directory is not None and run_directory.is_dir():
+            try:
+                with (run_directory / "manifest.json").open(encoding="utf-8") as handle:
+                    manifest = json.load(handle)
+            except (OSError, ValueError):
+                manifest = {}
+            episode = read_last_episode(run_directory / "episodes.csv")
+        configuration = manifest.get("configuration", {})
+        modified = status_path.stat().st_mtime
+        if job_id in records and records[job_id]["modified"] >= modified:
+            continue
+        maps = configuration.get("maps") or [task.get("map_path", "")]
+        records[job_id] = {
+            "modified": modified,
+            "manifest_path": str(run_directory / "manifest.json")
+            if run_directory is not None
+            else "",
+            "run_directory": run_text,
+            "status": str(status.get("status", "unknown")),
+            "planned": int(manifest.get("episodes_planned", 1) or 1),
+            "completed": int(
+                manifest.get(
+                    "episodes_completed",
+                    1 if status.get("status") == "complete" else 0,
+                )
+                or 0
+            ),
+            "error": str(status.get("error", "") or manifest.get("error", "")),
+            "method": str(configuration.get("method") or task.get("method", "")),
+            "map": Path(str(maps[0])).name,
+            "sensor": ",".join(configuration.get("sensor_types", []))
+            or str(status.get("sensor", "")),
+            "range": ",".join(
+                str(value) for value in configuration.get("sensor_ranges", [])
+            )
+            or str(task.get("sensor_range", "")),
+            "seed": str(episode.get("seed") or task.get("seed", "")),
+            "coverage": str(episode.get("final_coverage_ratio", "")),
+            "steps": str(episode.get("steps_executed", "")),
+            "termination": str(episode.get("termination_reason", "")),
+        }
     return records
 
 
@@ -248,7 +312,7 @@ def log_paths(log_root, job_id):
     result = {"stdout": "", "stderr": ""}
     if not log_root.is_dir():
         return result
-    for path in log_root.glob("*-{}.*".format(job_id)):
+    for path in log_root.rglob("*-{}.*".format(job_id)):
         if path.suffix == ".out":
             result["stdout"] = str(path)
         elif path.suffix == ".err":

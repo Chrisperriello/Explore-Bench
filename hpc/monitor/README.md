@@ -9,7 +9,7 @@ It shows:
 - job name, state, elapsed time, and allocated CPUs;
 - estimated CPU use when Ada's `sstat` command provides CPU time;
 - average or maximum memory when `sstat` provides it;
-- collector progress from each `manifest.json` file;
+- collector progress from each manifest or array-task status file;
 - final coverage and termination reason after an episode is recorded;
 - paths to the job's data and logs;
 - the end of an error log for the selected job.
@@ -35,3 +35,6 @@ python3 hpc/monitor/slurm_monitor.py --once
 The CPU percentage is an estimate computed from Slurm's recorded CPU time,
 elapsed time, and allocated CPU count. Some clusters update this slowly or do
 not expose it while a job is running; the monitor displays `-` in that case.
+
+The monitor searches nested folders, so it displays both the one-pass smoke
+job and the individual tasks from the paired Level-0 arrays.
