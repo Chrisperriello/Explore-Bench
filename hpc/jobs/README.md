@@ -9,3 +9,6 @@ Each subfolder contains one stage of the cluster workflow:
 
 Keeping the stages separate makes it clear whether a script creates raw data,
 checks data, or combines data.
+
+Submission wrappers create `../slurm/logs` before calling `sbatch`. This is
+necessary because Slurm opens its output file before the batch script begins.

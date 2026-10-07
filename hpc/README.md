@@ -10,15 +10,22 @@ The folders are organized by the order in which the data pipeline will run:
 3. `jobs/collect/`: submit many independent collection jobs in parallel.
 4. `jobs/check/`: confirm that every expected job finished and wrote valid data.
 5. `jobs/merge/`: combine the checked job outputs into analysis-ready tables.
+6. `monitor/`: display Slurm state and recorded-data health in the terminal.
 
 Only scripts, task definitions, and documentation belong here. Generated data
-belongs under `results/`, which is ignored by Git.
+and Slurm logs are written outside the repository:
+
+```text
+../slurm/
+├── data/
+└── logs/
+```
 
 ## Current status
 
-Only the one-pass smoke job is implemented. The other folders document the
-next pipeline pieces and prevent their responsibilities from being mixed
-together.
+The one-pass smoke job and terminal monitor are implemented. The other folders
+document the next pipeline pieces and prevent their responsibilities from being
+mixed together.
 
 ## Environment
 

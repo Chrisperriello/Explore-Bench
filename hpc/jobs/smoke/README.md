@@ -13,11 +13,22 @@ Slurm problems before submitting many jobs.
 - legacy map sharing and navigation behavior;
 - detailed episode, step, and per-robot CSV output.
 
-Submit it from the repository root with:
+Submit it from the repository root with the wrapper that creates the external
+log and data directories:
 
 ```bash
-sbatch hpc/jobs/smoke/run_one_pass.sbatch
+bash hpc/jobs/smoke/submit_one_pass.sh
 ```
 
-The data is written under `results/slurm_one_pass/job_<job-id>/`. Slurm writes
-the terminal output to its normal `slurm-<job-id>.out` file.
+Nothing generated is written inside Explore-Bench:
+
+```text
+../slurm/
+├── data/one_pass/job_<job-id>/
+└── logs/
+    ├── explore-one-pass-<job-id>.out
+    └── explore-one-pass-<job-id>.err
+```
+
+Submitting `run_one_pass.sbatch` directly discards its terminal log. Use the
+wrapper so the log is retained outside the repository.

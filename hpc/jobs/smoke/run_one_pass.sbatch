@@ -5,20 +5,27 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=4G
 #SBATCH --time=00:30:00
+#SBATCH --output=/dev/null
+#SBATCH --error=/dev/null
 
-set -euo pipefail
+# Do not enable "unset variable" checking until after Conda activates. Ada's
+# Conda activation scripts read ADDR2LINE before guaranteeing that it exists.
+set -eo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 JOB_ID="${SLURM_JOB_ID:-manual}"
-OUTPUT_ROOT="${REPO_ROOT}/results/slurm_one_pass/job_${JOB_ID}"
+SLURM_ROOT="${REPO_ROOT}/../slurm"
+OUTPUT_ROOT="${SLURM_ROOT}/data/one_pass/job_${JOB_ID}"
 
 cd "${REPO_ROOT}"
+mkdir -p "${OUTPUT_ROOT}"
 
 module load python/anaconda3
 unset PYTHONHOME
 eval "$(conda shell.bash hook)"
 conda activate "${REPO_ROOT}/.conda-env"
+set -u
 
 export MPLBACKEND=Agg
 export OMP_NUM_THREADS=1
