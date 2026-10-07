@@ -1,31 +1,55 @@
-# HPC data pipeline
+# HPC Level-0 collection
 
 This folder contains the files used to run Explore-Bench on a Slurm computing
 cluster. Slurm is the system that starts and manages jobs across cluster nodes.
 
-The folders are organized by the order in which the data pipeline will run:
+The collection path is:
 
 1. `jobs/smoke/`: run one small job to prove the environment and collector work.
-2. `tasks/`: describe the runs that the full data collection must execute.
-3. `jobs/collect/`: submit many independent collection jobs in parallel.
-4. `jobs/check/`: confirm that every expected job finished and wrote valid data.
-5. `jobs/merge/`: combine the checked job outputs into analysis-ready tables.
-6. `monitor/`: display Slurm state and recorded-data health in the terminal.
+2. `tasks/`: define the maps, methods, seeds, and fixed collection settings.
+3. `jobs/collect/`: create one task table and submit two matched Slurm arrays.
+4. Each array task writes one independent raw run outside the repository.
+
+`jobs/check/` and `jobs/merge/` are separate later tools. They are not part of
+collecting the raw data.
+
+`monitor/` displays Slurm state and recorded-data health in the terminal.
 
 Only scripts, task definitions, and documentation belong here. Generated data
 and Slurm logs are written outside the repository:
 
 ```text
 ../slurm/
-├── data/
-└── logs/
+├── tasks/level0/<collection-id>/
+├── data/level0/<collection-id>/
+└── logs/level0/<collection-id>/
 ```
 
 ## Current status
 
-The one-pass smoke job and terminal monitor are implemented. The other folders
-document the next pipeline pieces and prevent their responsibilities from being
-mixed together.
+The one-pass smoke job, terminal monitor, and paired Level-0 Slurm arrays are
+implemented. The collection uses one CPU per array task because each collector
+process is single-threaded. Parallelism comes from Slurm running different
+array tasks at the same time.
+
+## Submit the Level-0 collection
+
+From the repository root on Ada:
+
+```bash
+bash hpc/jobs/collect/submit_level0.sh
+```
+
+The default limit is 16 simultaneous tasks in each array. To use a different
+limit or a memorable collection ID:
+
+```bash
+bash hpc/jobs/collect/submit_level0.sh 8 level0_validation_01
+```
+
+The command submits one original 360-degree array and one four-beam array. Both
+read the same generated task table, so matching array indices use the same map,
+method, team size, and seed.
 
 ## Environment
 

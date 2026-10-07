@@ -1,4 +1,4 @@
-# Result merging
+# Result merging (separate from collection)
 
 This folder will contain the job that combines checked per-job CSV files into
 larger tables. It will add the task number and sensor configuration to each row

@@ -1,4 +1,4 @@
-# Result checks
+# Result checks (separate from collection)
 
 This folder will contain the job that checks collected data before it is used.
 It will report missing jobs, failed manifests, wrong row counts, changed maps,
