@@ -122,6 +122,11 @@ class Level0MonitorTests(unittest.TestCase):
             self.assertEqual(record["method"], "cost")
             self.assertEqual(record["map"], "corner.pgm")
 
+            self.assertEqual(
+                log_paths(root / "logs", "22171_[8-59%8]"),
+                {"stdout": "", "stderr": ""},
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

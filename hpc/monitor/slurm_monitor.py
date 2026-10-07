@@ -312,7 +312,12 @@ def log_paths(log_root, job_id):
     result = {"stdout": "", "stderr": ""}
     if not log_root.is_dir():
         return result
-    for path in log_root.rglob("*-{}.*".format(job_id)):
+    for path in log_root.rglob("*"):
+        if not path.is_file():
+            continue
+        match = JOB_ID_PATTERN.search(path.name)
+        if match is None or match.group(1) != job_id:
+            continue
         if path.suffix == ".out":
             result["stdout"] = str(path)
         elif path.suffix == ".err":
