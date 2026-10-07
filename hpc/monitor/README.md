@@ -38,3 +38,28 @@ not expose it while a job is running; the monitor displays `-` in that case.
 
 The monitor searches nested folders, so it displays both the one-pass smoke
 job and the individual tasks from the paired Level-0 arrays.
+
+## Browser dashboard
+
+`slurm_dashboard.py` provides a rendered live view for one Level-0 collection.
+It reads that collection's frozen task table and status files, and only requests
+live CPU and memory information for its running Slurm jobs.
+
+Start it on Ada:
+
+```bash
+python3 hpc/monitor/slurm_dashboard.py \
+  --collection level0_validation_01
+```
+
+Keep that process running. In a second terminal on your computer, create an SSH
+tunnel (replace `ada` with the hostname you normally use to connect):
+
+```bash
+ssh -N -L 8765:127.0.0.1:8765 cperr23@ada
+```
+
+Then open `http://127.0.0.1:8765` in your computer's browser. The server binds
+only to Ada's loopback interface, so the page is available through your SSH
+tunnel rather than being exposed publicly. It uses only Python's standard
+library and refreshes every five seconds.
