@@ -12,10 +12,9 @@
 # Conda activation scripts read ADDR2LINE before guaranteeing that it exists.
 set -eo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
+REPO_ROOT="${EXPLORE_BENCH_ROOT:?submit with submit_one_pass.sh}"
 JOB_ID="${SLURM_JOB_ID:-manual}"
-SLURM_ROOT="${REPO_ROOT}/../slurm"
+SLURM_ROOT="${EXPLORE_BENCH_SLURM_ROOT:?submit with submit_one_pass.sh}"
 OUTPUT_ROOT="${SLURM_ROOT}/data/one_pass/job_${JOB_ID}"
 
 cd "${REPO_ROOT}"

@@ -31,4 +31,7 @@ Nothing generated is written inside Explore-Bench:
 ```
 
 Submitting `run_one_pass.sbatch` directly discards its terminal log. Use the
-wrapper so the log is retained outside the repository.
+wrapper so the log is retained outside the repository and the real repository
+path is passed to Slurm. Slurm executes a copied batch script from its own
+system directory, so the batch script cannot discover the repository from its
+own filename.

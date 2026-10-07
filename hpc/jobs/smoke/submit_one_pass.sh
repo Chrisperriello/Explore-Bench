@@ -12,6 +12,7 @@ mkdir -p "${LOG_ROOT}" "${DATA_ROOT}"
 
 sbatch \
   --chdir="${REPO_ROOT}" \
+  --export="ALL,EXPLORE_BENCH_ROOT=${REPO_ROOT},EXPLORE_BENCH_SLURM_ROOT=${SLURM_ROOT}" \
   --output="${LOG_ROOT}/%x-%j.out" \
   --error="${LOG_ROOT}/%x-%j.err" \
   "${SCRIPT_DIR}/run_one_pass.sbatch"
