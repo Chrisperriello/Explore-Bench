@@ -1,0 +1,55 @@
+{
+  "description": "Matched Level-0 collection for the original 360-degree sensor and the four-beam sensor.",
+  "maps": [
+    {
+      "name": "loop",
+      "path": "onpolicy/onpolicy/envs/GridEnv/datasets/square_loop.pgm"
+    },
+    {
+      "name": "corridor",
+      "path": "onpolicy/onpolicy/envs/GridEnv/datasets/corridor.pgm"
+    },
+    {
+      "name": "corner",
+      "path": "onpolicy/onpolicy/envs/GridEnv/datasets/corner.pgm"
+    },
+    {
+      "name": "room",
+      "path": "onpolicy/onpolicy/envs/GridEnv/datasets/room1_modified.pgm"
+    },
+    {
+      "name": "comb1",
+      "path": "onpolicy/onpolicy/envs/GridEnv/datasets/loop_with_corridor_sym.pgm"
+    },
+    {
+      "name": "comb2",
+      "path": "onpolicy/onpolicy/envs/GridEnv/datasets/room_with_corner.pgm"
+    }
+  ],
+  "methods": [
+    "cost",
+    "mmpf"
+  ],
+  "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "team_size": 2,
+  "resolution": 0.1,
+  "sensor_range": 3.5,
+  "communication_mode": "legacy",
+  "communication_protocol": "round_robin",
+  "max_steps": 1000,
+  "no_progress_patience": 0,
+  "coverage_thresholds": [
+    0.9,
+    0.98,
+    0.99
+  ],
+  "target_coverage": 0.99,
+  "record": "full",
+  "map_snapshots": "none"
+}
