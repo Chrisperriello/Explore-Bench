@@ -1,0 +1,49 @@
+{
+  "description": "Small five-room diagnostic that separates sensor range from map-sharing behavior.",
+  "map": {
+    "name": "room",
+    "path": "onpolicy/onpolicy/envs/GridEnv/datasets/room1_modified.pgm"
+  },
+  "methods": [
+    "cost",
+    "mmpf"
+  ],
+  "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "treatments": [
+    {
+      "name": "legacy_3p5",
+      "communication_mode": "legacy",
+      "sensor_range": 3.5
+    },
+    {
+      "name": "legacy_7p0",
+      "communication_mode": "legacy",
+      "sensor_range": 7.0
+    },
+    {
+      "name": "perfect_3p5",
+      "communication_mode": "perfect",
+      "sensor_range": 3.5
+    }
+  ],
+  "sensor_type": "omnidirectional",
+  "team_size": 2,
+  "resolution": 0.1,
+  "communication_protocol": "round_robin",
+  "max_steps": 1000,
+  "no_progress_patience": 0,
+  "coverage_thresholds": [
+    0.9,
+    0.98,
+    0.99
+  ],
+  "target_coverage": 0.99,
+  "record": "full",
+  "map_snapshots": "none"
+}
