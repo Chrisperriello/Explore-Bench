@@ -6,5 +6,7 @@ visualization. It is intentionally separate from `grid_simulator/` and
 
 Current study:
 
+- [`level0_baseline/`](level0_baseline/README.md): paired original-versus-
+  four-beam Level-0 report, tables, figures, and advisor packet.
 - [`level0_pilot/`](level0_pilot/README.md): scoped four-beam sensing and
   communication pilot, plotting tools, and presentation artifacts.
