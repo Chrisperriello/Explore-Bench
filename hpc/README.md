@@ -15,6 +15,10 @@ collecting the raw data.
 
 `monitor/` displays Slurm state and recorded-data health in the terminal.
 
+`jobs/paper_consistency/` is a separate 30-run diagnostic. It checks whether
+sensor distance or map-sharing behavior explains disagreement with the paper;
+it does not replace the original-versus-four-beam collection.
+
 Only scripts, task definitions, and documentation belong here. Generated data
 and Slurm logs are written outside the repository:
 

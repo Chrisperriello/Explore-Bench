@@ -4,6 +4,8 @@ Each subfolder contains one stage of the cluster workflow:
 
 - `smoke`: a single end-to-end test run.
 - `collect`: paired original and four-beam Level-0 data collection.
+- `paper_consistency`: a small five-room diagnostic for sensor distance and
+  map-sharing behavior.
 - `check`: future checks for missing, failed, or mismatched results.
 - `merge`: future scripts that combine raw outputs into final tables.
 
