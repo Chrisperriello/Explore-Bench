@@ -19,6 +19,11 @@ collecting the raw data.
 sensor distance or map-sharing behavior explains disagreement with the paper;
 it does not replace the original-versus-four-beam collection.
 
+`jobs/level0_paper_audit/` is the separate 80-run validation gate for the
+paper's Level-0 five-room Table-II numbers. It preserves the existing
+collectors and adds exact provenance, independent metric conventions, a legacy
+regression check, and paired four-beam sensitivity lanes.
+
 Only scripts, task definitions, and documentation belong here. Generated data
 and Slurm logs are written outside the repository:
 

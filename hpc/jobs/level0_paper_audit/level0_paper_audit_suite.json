@@ -1,0 +1,60 @@
+{
+  "description": "Level-0 Table-II audit with a paired four-beam and range extension.",
+  "map": {
+    "name": "room",
+    "path": "onpolicy/onpolicy/envs/GridEnv/datasets/room1_modified.pgm"
+  },
+  "methods": [
+    "cost",
+    "mmpf"
+  ],
+  "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+  ],
+  "treatments": [
+    {
+      "name": "omnidirectional_3p5",
+      "sensor_type": "omnidirectional",
+      "sensor_range": 3.5,
+      "role": "paper_code_control"
+    },
+    {
+      "name": "four_beam_3p5",
+      "sensor_type": "four_beam",
+      "sensor_range": 3.5,
+      "role": "primary_sensor_extension"
+    },
+    {
+      "name": "omnidirectional_7p0",
+      "sensor_type": "omnidirectional",
+      "sensor_range": 7.0,
+      "role": "gazebo_range_sensitivity"
+    },
+    {
+      "name": "four_beam_7p0",
+      "sensor_type": "four_beam",
+      "sensor_range": 7.0,
+      "role": "paired_range_sensitivity"
+    }
+  ],
+  "team_size": 2,
+  "resolution": 0.1,
+  "communication_mode": "legacy",
+  "communication_protocol": "round_robin",
+  "max_steps": 1000,
+  "coverage_thresholds": [
+    0.9,
+    0.98,
+    0.99
+  ],
+  "target_coverage": 0.99
+}

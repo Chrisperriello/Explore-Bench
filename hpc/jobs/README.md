@@ -6,6 +6,8 @@ Each subfolder contains one stage of the cluster workflow:
 - `collect`: paired original and four-beam Level-0 data collection.
 - `paper_consistency`: a small five-room diagnostic for sensor distance and
   map-sharing behavior.
+- `level0_paper_audit`: the isolated 80-run Table-II audit with paired 3.5 m,
+  7 m, omnidirectional, and four-beam treatments.
 - `check`: future checks for missing, failed, or mismatched results.
 - `merge`: future scripts that combine raw outputs into final tables.
 
