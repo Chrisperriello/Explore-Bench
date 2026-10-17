@@ -6,6 +6,8 @@ visualization. It is intentionally separate from `grid_simulator/` and
 
 Current study:
 
+- [`level0_paper_audit/`](level0_paper_audit/README.md): strict five-room
+  Table-II validation with paired four-beam and range sensitivity checks.
 - [`paper_consistency/`](paper_consistency/README.md): three-treatment report
   separating sensor-distance effects from restricted-map planning effects.
 - [`level0_baseline/`](level0_baseline/README.md): paired original-versus-
