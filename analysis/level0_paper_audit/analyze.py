@@ -33,6 +33,11 @@ PAPER = {
     "sigma": {"cost": 0.09, "mmpf": 0.01},
     "r_o": {"cost": 0.10, "mmpf": 0.04},
 }
+CLAIM_TREATMENT = "omnidirectional_3p5"
+CLAIM_METRICS = (
+    ("Ttopo", "coverage_90_step", 90),
+    ("Ttotal", "coverage_99_step", 99),
+)
 
 
 def read_csv(path):
@@ -373,6 +378,138 @@ def paired_summaries(pairs):
     return rows
 
 
+def one_sided_sign_test(favoring, opposing):
+    """Exact P(X >= favoring) for non-tied pairs under p=0.5."""
+    non_tied = favoring + opposing
+    if not non_tied:
+        return None
+    return sum(
+        math.comb(non_tied, successes)
+        for successes in range(favoring, non_tied + 1)
+    ) / float(2 ** non_tied)
+
+
+def median_order_statistic_interval(values, confidence=0.95):
+    """Return the narrowest distribution-free interval meeting confidence."""
+    ordered = sorted(float(value) for value in values)
+    if not ordered:
+        return None, None, None
+    n = len(ordered)
+    usable = []
+    for lower_index in range(n // 2):
+        tail = sum(math.comb(n, j) for j in range(lower_index + 1)) / float(2 ** n)
+        coverage = 1.0 - 2.0 * tail
+        if coverage >= confidence:
+            usable.append((lower_index, coverage))
+    lower_index, coverage = max(usable, default=(0, 1.0 - 2.0 / float(2 ** n)))
+    return ordered[lower_index], ordered[-lower_index - 1], coverage
+
+
+def method_ranking_pairs(episodes):
+    """Pair the paper-control Cost and MMPF observations by frozen seed."""
+    lookup = {
+        (row["method"], integer(row["seed"])): row
+        for row in episodes
+        if row["treatment"] == CLAIM_TREATMENT
+    }
+    rows = []
+    for seed in range(1, 11):
+        cost = lookup[("cost", seed)]
+        mmpf = lookup[("mmpf", seed)]
+        row = {
+            "seed": seed,
+            "cost_start_positions": cost["start_positions"],
+            "mmpf_start_positions": mmpf["start_positions"],
+            "cost_start_headings_rad": cost["start_headings_rad"],
+            "mmpf_start_headings_rad": mmpf["start_headings_rad"],
+            "starts_and_headings_match": (
+                cost["start_positions"] == mmpf["start_positions"]
+                and cost["start_headings_rad"] == mmpf["start_headings_rad"]
+            ),
+        }
+        for metric, field, _ in CLAIM_METRICS:
+            cost_value = number(cost.get(field))
+            mmpf_value = number(mmpf.get(field))
+            row["cost_{}".format(metric)] = "" if cost_value is None else cost_value
+            row["mmpf_{}".format(metric)] = "" if mmpf_value is None else mmpf_value
+            row["mmpf_minus_cost_{}".format(metric)] = (
+                "" if cost_value is None or mmpf_value is None else mmpf_value - cost_value
+            )
+        rows.append(row)
+    return rows
+
+
+def claim_reproduction_rows(pairs):
+    """Evaluate the paper's Level-0 claim that field/MMPF beats Cost."""
+    rows = []
+    for metric, _, threshold in CLAIM_METRICS:
+        matched_starts = sum(truth(row["starts_and_headings_match"]) for row in pairs)
+        cost_values = [number(row["cost_{}".format(metric)]) for row in pairs]
+        mmpf_values = [number(row["mmpf_{}".format(metric)]) for row in pairs]
+        deltas = [
+            number(row["mmpf_minus_cost_{}".format(metric)]) for row in pairs
+        ]
+        complete_deltas = [value for value in deltas if value is not None]
+        favoring = sum(value < 0 for value in complete_deltas)
+        ties = sum(value == 0 for value in complete_deltas)
+        opposing = sum(value > 0 for value in complete_deltas)
+        p_value = one_sided_sign_test(favoring, opposing)
+        ci_low, ci_high, ci_coverage = median_order_statistic_interval(
+            complete_deltas
+        )
+        cost_summary = describe(cost_values)
+        mmpf_summary = describe(mmpf_values)
+        delta_summary = describe(complete_deltas)
+        passed = (
+            len(pairs) == 10
+            and matched_starts == 10
+            and cost_summary["n"] == 10
+            and mmpf_summary["n"] == 10
+            and len(complete_deltas) == 10
+            and favoring >= 9
+            and delta_summary["median"] < 0
+            and ci_high is not None
+            and ci_high < 0
+            and p_value is not None
+            and p_value < 0.05
+        )
+        detail = (
+            "MMPF is faster in {}/10 pairs; median delta {:.6g}; "
+            "interval [{:.6g}, {:.6g}]; one-sided sign-test p={:.6g}"
+        ).format(
+            favoring,
+            delta_summary["median"] if complete_deltas else math.nan,
+            ci_low if ci_low is not None else math.nan,
+            ci_high if ci_high is not None else math.nan,
+            p_value if p_value is not None else math.nan,
+        )
+        rows.append(
+            {
+                "claim": "MMPF requires fewer decisions than Cost",
+                "metric": metric,
+                "coverage_threshold_percent": threshold,
+                "total_pairs": len(pairs),
+                "matched_start_pairs": matched_starts,
+                "cost_successes": cost_summary["n"],
+                "mmpf_successes": mmpf_summary["n"],
+                "complete_pairs": len(complete_deltas),
+                "cost_median": cost_summary["median"],
+                "mmpf_median": mmpf_summary["median"],
+                "median_mmpf_minus_cost": delta_summary["median"],
+                "median_delta_interval_low": ci_low if ci_low is not None else "",
+                "median_delta_interval_high": ci_high if ci_high is not None else "",
+                "interval_coverage": ci_coverage if ci_coverage is not None else "",
+                "pairs_favoring_mmpf": favoring,
+                "ties": ties,
+                "pairs_favoring_cost": opposing,
+                "one_sided_sign_test_p_value": p_value if p_value is not None else "",
+                "gate_status": "pass" if passed else "fail",
+                "detail": detail,
+            }
+        )
+    return rows
+
+
 def parsed_agent_zero(value):
     if value in (None, ""):
         return None
@@ -687,19 +824,27 @@ def markdown_table(rows, columns):
 
 
 def write_report(
-    output_directory, episodes, summary, pair_summary, verdicts, checks
+    output_directory,
+    episodes,
+    summary,
+    pair_summary,
+    claim_results,
+    verdicts,
+    checks,
 ):
-    unresolved = [row for row in verdicts if row["verdict"] == "unresolved_mismatch"]
     defect = any(row["status"] == "fail" for row in checks)
     incomplete = any(row["status"] == "not_run" for row in checks)
+    claim_failed = len(claim_results) != len(CLAIM_METRICS) or any(
+        row["gate_status"] != "pass" for row in claim_results
+    )
     if defect:
         overall = "PIPELINE DEFECT"
     elif incomplete:
         overall = "INCOMPLETE — regression comparison not run"
-    elif unresolved:
-        overall = "UNRESOLVED — paper validation has not passed"
+    elif claim_failed:
+        overall = "FAIL — Level-0 method-ranking claim was not reproduced"
     else:
-        overall = "PASS — every paper metric is supported or explained"
+        overall = "PASS — Level-0 method-ranking claim reproduced"
 
     control = [
         row for row in summary if row["treatment"] == "omnidirectional_3p5"
@@ -714,9 +859,33 @@ def write_report(
             "",
             "The paper-control lane is the released Level-0 3.5 m omnidirectional sensor. Four-beam and 7 m results are controlled extensions, not paper reproductions.",
             "",
+            "The continuation gate tests the paper's qualitative Level-0 claim that potential-field/MMPF requires fewer decisions than Cost. Exact Table-II values remain a separate diagnostic and are not claimed as reproduced.",
+            "",
             "## Integrity checks",
             "",
             markdown_table(checks, (("check", "Check"), ("status", "Status"), ("detail", "Detail"))),
+            "",
+            "## Claim-reproduction gate",
+            "",
+            "Each threshold passes only when all ten paired controls have identical starts and headings, both methods reach the threshold in all ten runs, at least nine pairs favor MMPF, the at-least-95% distribution-free paired-median interval is below zero, and the one-sided exact sign-test p-value is below 0.05.",
+            "",
+            markdown_table(
+                claim_results,
+                (
+                    ("metric", "Metric"),
+                    ("matched_start_pairs", "Matched starts"),
+                    ("cost_successes", "Cost successes"),
+                    ("mmpf_successes", "MMPF successes"),
+                    ("cost_median", "Cost median"),
+                    ("mmpf_median", "MMPF median"),
+                    ("median_mmpf_minus_cost", "Median paired delta"),
+                    ("median_delta_interval_low", "Interval low"),
+                    ("median_delta_interval_high", "Interval high"),
+                    ("pairs_favoring_mmpf", "Pairs favoring MMPF"),
+                    ("one_sided_sign_test_p_value", "Sign-test p"),
+                    ("gate_status", "Gate"),
+                ),
+            ),
             "",
             "## Paper-control summary",
             "",
@@ -748,7 +917,7 @@ def write_report(
                 ),
             ),
             "",
-            "## Table-II verdicts",
+            "## Exact Table-II diagnostics",
             "",
             markdown_table(
                 verdicts,
@@ -766,7 +935,7 @@ def write_report(
             "",
             "## Interpretation boundary",
             "",
-            "Ranking agreement alone is not validation. Any unresolved mismatch or failed regression check blocks a paper-reproduction claim. Four-beam results quantify the paired sensor extension only.",
+            "A gate pass supports only the paper's directional Level-0 method-ranking claim under the released control configuration. It does not reproduce the published Table-II cells, explain unresolved metric mismatches, validate the four-beam extension, or establish cross-level reproduction.",
             "",
         ]
     )
@@ -785,6 +954,8 @@ def analyze(input_directory, output_directory, regression_input=None):
     summary = summaries(episodes)
     pairs = paired_rows(episodes)
     pair_summary = paired_summaries(pairs)
+    ranking_pairs = method_ranking_pairs(episodes)
+    claim_results = claim_reproduction_rows(ranking_pairs)
     verdicts = verdict_rows(episodes)
     candidates = candidate_rows(episodes)
     write_csv(output_directory / "episodes_combined.csv", episodes)
@@ -793,11 +964,19 @@ def analyze(input_directory, output_directory, regression_input=None):
     write_csv(output_directory / "summary.csv", summary)
     write_csv(output_directory / "paired_sensor_results.csv", pairs)
     write_csv(output_directory / "paired_sensor_summary.csv", pair_summary)
+    write_csv(output_directory / "method_ranking_pairs.csv", ranking_pairs)
+    write_csv(output_directory / "claim_reproduction.csv", claim_results)
     write_csv(output_directory / "paper_verdicts.csv", verdicts)
     write_csv(output_directory / "metric_candidates.csv", candidates)
     write_csv(output_directory / "pipeline_checks.csv", checks)
     return write_report(
-        output_directory, episodes, summary, pair_summary, verdicts, checks
+        output_directory,
+        episodes,
+        summary,
+        pair_summary,
+        claim_results,
+        verdicts,
+        checks,
     )
 
 

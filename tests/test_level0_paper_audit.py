@@ -138,6 +138,58 @@ class Level0PaperAuditTests(unittest.TestCase):
         self.assertFalse(analyzer.comparable_candidate("wall_seconds_at_90"))
         self.assertTrue(analyzer.comparable_candidate("decision_step_at_90"))
 
+    def ranking_episodes(self, losses=0):
+        episodes = []
+        for seed in range(1, 11):
+            for method in analyzer.METHODS:
+                cost_wins = method == "mmpf" and seed <= losses
+                episodes.append(
+                    {
+                        "treatment": analyzer.CLAIM_TREATMENT,
+                        "method": method,
+                        "seed": seed,
+                        "start_positions": "[[1, 1], [2, 2]]",
+                        "start_headings_rad": "[0.0, 1.0]",
+                        "coverage_90_step": (
+                            220 + seed
+                            if method == "cost"
+                            else (240 + seed if cost_wins else 120 + seed)
+                        ),
+                        "coverage_99_step": (
+                            320 + seed
+                            if method == "cost"
+                            else (340 + seed if cost_wins else 220 + seed)
+                        ),
+                    }
+                )
+        return episodes
+
+    def test_claim_gate_passes_with_nine_of_ten_paired_wins(self):
+        pairs = analyzer.method_ranking_pairs(self.ranking_episodes(losses=1))
+        results = analyzer.claim_reproduction_rows(pairs)
+
+        self.assertEqual([row["gate_status"] for row in results], ["pass", "pass"])
+        self.assertEqual(results[0]["pairs_favoring_mmpf"], 9)
+        self.assertLess(results[0]["median_delta_interval_high"], 0)
+        self.assertLess(results[0]["one_sided_sign_test_p_value"], 0.05)
+
+    def test_claim_gate_fails_with_only_eight_of_ten_paired_wins(self):
+        pairs = analyzer.method_ranking_pairs(self.ranking_episodes(losses=2))
+        results = analyzer.claim_reproduction_rows(pairs)
+
+        self.assertEqual([row["gate_status"] for row in results], ["fail", "fail"])
+        self.assertEqual(results[0]["pairs_favoring_mmpf"], 8)
+        self.assertGreater(results[0]["one_sided_sign_test_p_value"], 0.05)
+
+    def test_claim_gate_rejects_unmatched_method_starts(self):
+        episodes = self.ranking_episodes()
+        episodes[1]["start_positions"] = "[[9, 9], [8, 8]]"
+        pairs = analyzer.method_ranking_pairs(episodes)
+        results = analyzer.claim_reproduction_rows(pairs)
+
+        self.assertEqual(results[0]["matched_start_pairs"], 9)
+        self.assertEqual([row["gate_status"] for row in results], ["fail", "fail"])
+
     def test_report_writes_markdown_and_html(self):
         summary = []
         for method in analyzer.METHODS:
@@ -166,7 +218,26 @@ class Level0PaperAuditTests(unittest.TestCase):
             for method in analyzer.METHODS
             for metric in ("Ttopo", "Ttotal", "sigma", "r_o")
         ]
+        verdicts[0]["verdict"] = "unresolved_mismatch"
+        verdicts[0]["explanation"] = "retained as a diagnostic"
         checks = [{"check": "regression", "status": "pass", "detail": "ok"}]
+        claim_results = [
+            {
+                "metric": metric,
+                "matched_start_pairs": 10,
+                "cost_successes": 10,
+                "mmpf_successes": 10,
+                "cost_median": 200,
+                "mmpf_median": 100,
+                "median_mmpf_minus_cost": -100,
+                "median_delta_interval_low": -120,
+                "median_delta_interval_high": -80,
+                "pairs_favoring_mmpf": 10,
+                "one_sided_sign_test_p_value": 0.0009765625,
+                "gate_status": "pass",
+            }
+            for metric in ("Ttopo", "Ttotal")
+        ]
         pair_summary = [
             {
                 "sensor_range": 3.5,
@@ -180,7 +251,13 @@ class Level0PaperAuditTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory)
             overall = analyzer.write_report(
-                output, [], summary, pair_summary, verdicts, checks
+                output,
+                [],
+                summary,
+                pair_summary,
+                claim_results,
+                verdicts,
+                checks,
             )
             self.assertTrue((output / "audit_report.md").is_file())
             html_text = (output / "audit_report.html").read_text(encoding="utf-8")
