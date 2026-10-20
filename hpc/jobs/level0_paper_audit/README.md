@@ -69,3 +69,9 @@ python3 analysis/level0_paper_audit/analyze.py \
 Without `--regression-input`, the report is deliberately marked incomplete.
 See [`analysis/level0_paper_audit`](../../../analysis/level0_paper_audit/README.md)
 for the metric conventions and verdict rules.
+
+The continuation gate is claim-level rather than exact-cell reproduction. It
+requires the paired 3.5 m omnidirectional controls to show MMPF outperforming
+Cost at both 90% and 99% coverage under the rules documented in the analysis
+README. Exact Table-II comparisons remain in the generated report as
+diagnostics and are not relabeled as reproduced results.

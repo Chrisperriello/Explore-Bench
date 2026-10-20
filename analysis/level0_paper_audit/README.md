@@ -5,6 +5,24 @@ claim. It requires 20 complete tasks in each treatment, exact method/seed/start
 pairing, one clean repository commit, one map hash, one collector hash, and one
 task table per treatment.
 
+## Continuation gate
+
+The attainable reproduction target is the paper's directional Level-0 claim:
+potential-field/MMPF requires fewer decisions than Cost in the five-room
+environment. The gate evaluates the 3.5 m omnidirectional control at both 90%
+(`Ttopo`) and 99% (`Ttotal`) coverage. Each metric must satisfy all of these
+rules:
+
+- all ten Cost and all ten MMPF runs reach the threshold;
+- Cost and MMPF have identical starts and headings within each seed;
+- at least nine of ten paired seeds favor MMPF;
+- the median MMPF-minus-Cost decision difference is negative;
+- the at-least-95% distribution-free median interval is entirely below zero;
+- the exact one-sided sign-test p-value is below 0.05.
+
+This gate supports only the method-ranking claim under the released Level-0
+control. It does not claim that the exact Table-II values were reproduced.
+
 ## Metric audit
 
 The raw episode file keeps interpretations separate instead of silently
@@ -44,6 +62,8 @@ The output directory contains:
 
 - `audit_report.md` and `audit_report.html`: overall result and evidence;
 - `paper_verdicts.csv`: supported, explained, or unresolved per method/metric;
+- `claim_reproduction.csv`: the two pass/fail method-ranking gate results;
+- `method_ranking_pairs.csv`: paired Cost/MMPF observations for every seed;
 - `metric_candidates.csv`: every formula/range interpretation and its tolerance
   result, including non-comparable wall/CPU timing for inspection;
 - `pipeline_checks.csv`: provenance, pairing, and legacy regression gates;
@@ -53,7 +73,8 @@ The output directory contains:
 - `episodes_combined.csv`, `steps_combined.csv`, and `run_inventory.csv`: the
   auditable combined source tables.
 
-The overall result is `PASS` only if every Table-II metric is supported or has
-a documented numerical explanation and the old/new 3.5 m control regression
-passes. An unexplained result is not called a pipeline defect. A failed exact
-legacy regression is.
+The overall result is `PASS` only when both method-ranking metrics pass and the
+old/new 3.5 m control regression passes. Exact-cell mismatches remain visible
+as diagnostics and must not be described as exact Table-II reproduction. An
+unexplained result is not called a pipeline defect. A failed exact legacy
+regression is.
