@@ -181,6 +181,12 @@ Note: you need to choose "Publish Point" button in the rviz and then click anywh
 
 Explore-Bench supports the DRL training in a fast grid-based simulator (Level-0).
 
+For reproducible research runs, use the new [MAPPO workflow](docs/mappo/README.md).
+It provides frozen tasks, corrected and versioned transition/reward semantics,
+immutable resumable checkpoints, independent validation/testing, common CSV
+collection, and a [decision record with sources](docs/mappo/decisions.md).
+The commands below describe the historical training entry point.
+
 Follow these steps to train your own DRL model:
 
 ```bash
