@@ -49,6 +49,7 @@ recovered from the original Explore-Bench experiment.
 | M29 | Sense at the actual executed grid pose, with no floating-point round trip | Historical truncation can move the sensing origin onto a neighboring wall; the shifted toy layout exposed this | `Session._sense_agent`; sensor-origin regression test |
 | M30 | Save and reload every resolved policy argument with the checkpoint | Reconstructing unspecified defaults from a later parser can silently change inference | Checkpoint manifest `policy_arguments`; actor-only loader |
 | M31 | Run a predeclared controlled-corridor learning check before the paper-map pilot | A successful optimizer call alone does not demonstrate exploration improves | `sanity.py`; validation AUC gain >= 0.01 over untrained actor, separate selected-checkpoint test |
+| M32 | Make complete dependency installation, editable packages and environment verification automatic | Optional package installation worked locally but left Ada unable to import the nested `onpolicy` package | `setup.sh`, `scripts/check_setup.py`, `tests/test_setup.py`; [setup runbook](../setup.md) records bootstrap, CPU wheels, diagnostics and recovery |
 
 ## What can be claimed after verification
 

@@ -14,17 +14,21 @@ for a future DQN controller; DQN itself is not implemented here.
 
 ## Environment and initial recipe
 
-Use the repository's Python 3.8 environment, including its MAPPO dependencies:
+On Ada, inside a compute allocation, set up the complete environment once:
 
 ```bash
-./.conda-env/bin/python --version
-./.conda-env/bin/python -c 'import torch, numpy; print(torch.__version__, numpy.__version__)'
-# If the existing environment has only the classical-collector dependencies:
-./.conda-env/bin/python -m pip install -r requirements-level0-mappo.txt
+source ./setup.sh --hpc
 ```
 
-The local development interpreter is `.venv/bin/python`. All commands below
-run from the repository root. Do not use Ada's system `python3`.
+Setup provisions/reuses Python 3.8.20, clears conflicting module variables,
+installs all dependencies and both editable packages, checks outside-checkout
+imports and runs pytest automatically. No manual `PYTHONPATH` or optional
+`--editable` step is required. Logs and the verification report are in `.setup/`.
+See [fresh-machine setup and recovery](../setup.md).
+
+The local development equivalent is `source ./setup.sh --local`; its interpreter
+is `.venv/bin/python`. All commands below run from the repository root. Do not
+use Ada's system `python3`.
 
 Before using the paper-map pilot, run the controlled generated-corridor check:
 

@@ -117,3 +117,16 @@ Commit and synchronize the source, rerun the controlled check on Ada, then run
 the 102,400-transition paper-map pilot. Inspect throughput, validation curves,
 termination reasons and seed sensitivity before the five-seed full sweep.
 No paper-map pilot, full research sweep, or DQN training was launched locally.
+
+## Deployment setup follow-up
+
+Ada initially could not start its Python because the module set `PYTHONHOME`
+to a different installation. After that was cleared, pytest could not import
+the uninstalled nested `onpolicy` package. These were environment/packaging
+failures, not executed MAPPO test failures. The complete setup now handles
+both cases and installs/verifies the entire Level-0 stack automatically.
+
+The follow-up verification used an isolated newly populated environment and
+passed **121 tests**, including the original 102. See the
+[setup evidence and limits](../setup.md#recorded-installer-verification-2026-10-21-local--2026-10-22-utc).
+This does not replace the outstanding Ada learning check and paper-map pilot.

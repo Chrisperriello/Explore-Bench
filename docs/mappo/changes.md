@@ -67,3 +67,25 @@ test uses two actual worker processes and snapshots their independent sessions.
 Only tested outcomes should be added to the final handoff. Full research
 performance requires the controlled learning check, pilot and five-seed runs;
 these are distinct from unit/integration tests.
+
+## Follow-up: complete environment provisioning
+
+The first Ada test attempt exposed a deployment gap: installing only the MAPPO
+requirements did not install the nested `onpolicy` package. Ada's module also
+set a conflicting `PYTHONHOME`. These failed before algorithm tests executed.
+
+| File/group | Change and reason |
+| --- | --- |
+| `setup.sh` | Provision/reuse the correct project Python, isolate module variables, select CPU wheels, install the complete stack and editable packages, verify and run tests by default |
+| `setup_env.sh` | Delegate to the complete installer and activate/clear the calling shell when sourced; retain old flags as compatibility aliases |
+| `pyproject.toml` | Make the root experiment package installable for worker/CLI imports outside the checkout |
+| `requirements-level0-mappo.txt` | Include the grid base, pin the logging runtime and use headless OpenCV without system display-library requirements |
+| `scripts/check_setup.py` | Independently check package origins, dependencies, native libraries, tensor execution, CLI and resolved maps, and retain actual versions in a report |
+| `tests/test_setup.py` | Cover fresh/reused environments, provider bootstrap, checksum rejection, module poisoning, failures/retries, recoverable rebuilding, activation and strict dependency checks |
+| `hpc/jobs/mappo/{submit.sh,run_stage.sbatch}` | Use the project interpreter directly and clear Python module overrides; avoid depending on a particular shell activation/module state |
+| `.gitignore` | Keep environments, backups, setup logs and editable/build metadata out of research commits |
+| Root/HPC/MAPPO READMEs and `docs/setup.md` | Replace optional manual installation steps with one setup command, explicit prerequisites, recovery and recorded verification boundaries |
+
+This does not change policy inputs, rewards, training budgets or scientific
+selection gates. The isolated installer verification uses a new environment;
+it does not mutate the preexisting development environment or HPC data.

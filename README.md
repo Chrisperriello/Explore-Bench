@@ -28,26 +28,27 @@ source /PATH/TO/CARTO_CATKIN_WS/devel_isolated/setup.bash
 MAPPO is a multi-agent variant of PPO (Proximal Policy Optimization), which is a SOTA on-policy reinforcement learning algorithm. We slightly modified the original [marlbenchmark/on-policy](https://github.com/marlbenchmark/on-policy) and provide the training and test code in this repo.
 
 ```bash
-# Create or activate .venv and install the standalone Level-0 dependencies.
-source ./setup_env.sh
+# Ada/Linux, inside a Slurm compute allocation: create/repair .conda-env,
+# install all Level-0/MAPPO dependencies and packages, and run the tests.
+source ./setup.sh --hpc
 
-# Add the general MAPPO training and test dependencies.
-source ./setup_env.sh --full
+# Local development: create/repair .venv with the same complete stack.
+source ./setup.sh --local
 ```
 
-The setup script uses Python 3.8 and pinned, mutually compatible packages. The
-`--full` dependency set is intentionally limited to Level-0 training, evaluation,
-logging, and tests; it does not install unrelated Atari, StarCraft, MuJoCo, MPI,
-TensorFlow, or CUDA-specific packages from the legacy `onpolicy/requirements.txt`.
+The setup script provisions Python 3.8.20 if missing, clears conflicting Python
+module variables, installs both local packages in editable mode, checks imports
+without `PYTHONPATH`, and runs the regression suite. Linux defaults to `.conda-env`
+and CPU-only PyTorch; macOS defaults to `.venv`. `setup_env.sh` remains a
+compatible setup-and-activation entry point. `--full` and `--editable` are now
+automatic. Use `--rebuild` to preserve a stale environment as a timestamped
+backup and create a replacement, not to delete it.
 
-```bash
-# Optional: install this checkout's onpolicy package in editable mode.
-source ./setup_env.sh --full --editable
-```
-
-Use `source ./setup_env.sh --rebuild --full` to recreate a stale environment.
-The editable install is separate because the repository's Level-0 entry points
-already import the local `onpolicy` tree directly.
+The complete stack covers Level-0 simulation, MAPPO, evaluation, logging and
+tests, not ROS/Gazebo, Atari, StarCraft, MuJoCo, MPI or TensorFlow. See the
+[setup runbook](docs/setup.md) for clean-machine requirements, recovery, saved
+verification reports, optional CUDA and the distinction between installation
+checks and learning validation.
 
 ### Turtlebot3 Description and Simulation
 
