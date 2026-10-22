@@ -1,6 +1,8 @@
 #!/bin/bash
 # Usage: bash submit.sh STAGE COLLECTION_ID CONFIG [extra sbatch arguments]
 set -euo pipefail
+unset PYTHONHOME PYTHONPATH
+export PYTHONNOUSERSITE=1
 STAGE="${1:?provide train, validate, select, evaluate or score}"
 COLLECTION="${2:?provide a new collection ID}"
 CONFIG="${3:?provide experiment JSON}"
@@ -10,6 +12,10 @@ case "$COLLECTION" in *[!a-zA-Z0-9_-]*|"") echo "invalid collection ID" >&2; exi
 REPOSITORY=$(git rev-parse --show-toplevel)
 cd "$REPOSITORY"
 PYTHON="${REPOSITORY}/.conda-env/bin/python"
+if [[ ! -x "$PYTHON" ]]; then
+    echo 'Missing project Python. Run bash setup.sh --hpc inside a compute allocation first.' >&2
+    exit 1
+fi
 CONFIG=$("$PYTHON" -c 'from pathlib import Path; import sys; print(Path(sys.argv[1]).resolve())' "$CONFIG")
 ROOT="${REPOSITORY}/../slurm/data/mappo/${COLLECTION}"
 LOGS="${REPOSITORY}/../slurm/logs/mappo/${COLLECTION}/${STAGE}"

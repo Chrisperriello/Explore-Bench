@@ -63,5 +63,9 @@ method, team size, and seed.
 ## Environment
 
 Jobs expect the repository-local Conda environment at `.conda-env`. On Ada,
-the job loads `python/anaconda3`, clears the module's `PYTHONHOME`, and activates
-that environment before running Python.
+run `source ./setup.sh --hpc` inside a compute allocation to create/repair it,
+install the complete Level-0/MAPPO stack and editable packages, and run checks.
+See [setup and recovery](../docs/setup.md). Historical collection jobs load
+`python/anaconda3`, clear its `PYTHONHOME` and activate that environment. New
+MAPPO jobs invoke its absolute Python path directly and clear conflicting
+Python module variables, without depending on activation.

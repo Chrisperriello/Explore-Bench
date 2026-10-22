@@ -4,11 +4,16 @@ See the [full runbook](../../../docs/mappo/README.md) and
 [decision record](../../../docs/mappo/decisions.md) before collecting results.
 The code is an independently versioned experiment, not a rerun of Table II.
 
-Use `.conda-env` with `requirements-level0-mappo.txt` installed, commit source
-changes first, then start from the repository root. The default recipe needs
+Run `source ./setup.sh --hpc` inside a compute allocation to create/repair
+`.conda-env`, install both editable packages and run the regression suite.
+See [fresh-machine setup](../../../docs/setup.md). Commit source changes first,
+then start from the repository root. The default recipe needs
 eight CPU workers and a CPU-only PyTorch training process. CUDA is optional;
-request a GPU from Slurm explicitly and set `EXPLORE_MAPPO_DEVICE=cuda` only
-when the cluster provides one. No GPU availability is assumed.
+install the CUDA build with `source ./setup.sh --hpc --cuda`, request a GPU from
+Slurm explicitly and set `EXPLORE_MAPPO_DEVICE=cuda` only when the cluster
+provides one. No GPU availability is assumed. Jobs use the absolute project
+interpreter and clear `PYTHONHOME`/`PYTHONPATH`; they do not require a module or
+shell activation to locate Python or either local package.
 
 The submit wrapper makes a frozen task file and launches arrays over declared
 training seeds (two concurrent seeds by default). It creates logs before
