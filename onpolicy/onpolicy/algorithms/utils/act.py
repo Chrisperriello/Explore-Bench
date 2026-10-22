@@ -21,6 +21,10 @@ class ACTLayer(nn.Module):
         self.multidiscrete_action = False
         self.continuous_action = False
         self.mixed_action = False
+        # Historical callers keep their weights; research configurations set
+        # both to one so the trainer's entropy coefficient is applied once.
+        self.motion_entropy_weight = 0.0025
+        self.communication_entropy_weight = 0.01
 
         if action_space.__class__.__name__ == "Discrete":
             action_dim = action_space.n
@@ -145,7 +149,10 @@ class ACTLayer(nn.Module):
                     dist_entropy.append(action_logit.entropy().mean())
                 
             action_log_probs = torch.sum(torch.cat(action_log_probs, -1), -1, keepdim=True)
-            dist_entropy = dist_entropy[0] * 0.0025 + dist_entropy[1] * 0.01 
+            dist_entropy = (
+                dist_entropy[0] * self.motion_entropy_weight
+                + dist_entropy[1] * self.communication_entropy_weight
+            )
 
         elif self.multidiscrete_action:
             action = torch.transpose(action, 0, 1)

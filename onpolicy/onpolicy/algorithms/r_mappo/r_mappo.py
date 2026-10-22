@@ -110,6 +110,11 @@ class R_MAPPO():
                                                                               active_masks_batch)
         # actor update
         ratio = torch.exp(action_log_probs - old_action_log_probs_batch)
+        with torch.no_grad():
+            self.last_ppo_statistics = {
+                'approximate_kl': ((ratio - 1) - torch.log(ratio.clamp_min(1e-12))).mean().item(),
+                'clip_fraction': ((ratio - 1).abs() > self.clip_param).float().mean().item(),
+            }
 
         surr1 = ratio * adv_targ
         surr2 = torch.clamp(ratio, 1.0 - self.clip_param, 1.0 + self.clip_param) * adv_targ
@@ -172,6 +177,8 @@ class R_MAPPO():
         train_info['actor_grad_norm'] = 0
         train_info['critic_grad_norm'] = 0
         train_info['ratio'] = 0
+        train_info['approximate_kl'] = 0
+        train_info['clip_fraction'] = 0
 
         for _ in range(self.ppo_epoch):
             if self._use_recurrent_policy:
@@ -192,6 +199,8 @@ class R_MAPPO():
                 train_info['actor_grad_norm'] += actor_grad_norm
                 train_info['critic_grad_norm'] += critic_grad_norm
                 train_info['ratio'] += ratio.mean().item()
+                for name, value in self.last_ppo_statistics.items():
+                    train_info[name] += value
 
         num_updates = self.ppo_epoch * self.num_mini_batch
 

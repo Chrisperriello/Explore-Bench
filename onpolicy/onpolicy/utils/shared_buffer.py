@@ -73,7 +73,9 @@ class SharedReplayBuffer(object):
             (self.episode_length, self.n_rollout_threads, num_agents, act_shape), dtype=np.float32)
         # ACTLayer sums the tuple components into one joint log probability,
         # so PPO needs one stored scalar rather than one value per flat action.
-        log_prob_shape = 1 if act_space.__class__.__name__ == 'Tuple' else act_shape
+        log_prob_shape = (
+            1 if act_space.__class__.__name__ in ('Tuple', 'Box') else act_shape
+        )
         self.action_log_probs = np.zeros(
             (self.episode_length, self.n_rollout_threads, num_agents, log_prob_shape), dtype=np.float32)
         self.rewards = np.zeros(

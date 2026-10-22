@@ -52,6 +52,8 @@ class R_Actor(nn.Module):
             input_size += self.hidden_size
 
         self.act = ACTLayer(action_space, input_size, self._use_orthogonal, self._gain)
+        self.act.motion_entropy_weight = getattr(args, 'motion_entropy_weight', 0.0025)
+        self.act.communication_entropy_weight = getattr(args, 'communication_entropy_weight', 0.01)
 
         if self._use_policy_vhead:
             init_method = [nn.init.xavier_uniform_, nn.init.orthogonal_][self._use_orthogonal]

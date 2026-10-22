@@ -18,9 +18,12 @@ class ValueNorm(nn.Module):
         self.per_element_update = per_element_update
         self.tpdv = dict(dtype=torch.float32, device=device)
 
-        self.running_mean = nn.Parameter(torch.zeros(input_shape), requires_grad=False).to(**self.tpdv)
-        self.running_mean_sq = nn.Parameter(torch.zeros(input_shape), requires_grad=False).to(**self.tpdv)
-        self.debiasing_term = nn.Parameter(torch.tensor(0.0), requires_grad=False).to(**self.tpdv)
+        # Construct on the destination device before registering Parameters.
+        # Parameter.to(cuda) returns a Tensor, which would silently disappear
+        # from state_dict and make GPU training checkpoints incomplete.
+        self.running_mean = nn.Parameter(torch.zeros(input_shape, **self.tpdv), requires_grad=False)
+        self.running_mean_sq = nn.Parameter(torch.zeros(input_shape, **self.tpdv), requires_grad=False)
+        self.debiasing_term = nn.Parameter(torch.tensor(0.0, **self.tpdv), requires_grad=False)
         
         self.reset_parameters()
 
