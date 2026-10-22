@@ -8,6 +8,8 @@ Each subfolder contains one stage of the cluster workflow:
   map-sharing behavior.
 - `level0_paper_audit`: the isolated 80-run Table-II audit with paired 3.5 m,
   7 m, omnidirectional, and four-beam treatments.
+- `mappo`: separately submitted training, validation, checkpoint selection,
+  frozen-policy testing and scoring using the versioned research workflow.
 - `check`: future checks for missing, failed, or mismatched results.
 - `merge`: future scripts that combine raw outputs into final tables.
 
