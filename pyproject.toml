@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools==75.3.4", "wheel==0.45.1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "explore-bench-research"
+version = "0.1.0"
+description = "Versioned Level-0 exploration experiments and MAPPO workflow"
+requires-python = ">=3.8,<3.9"
+
+[tool.setuptools]
+packages = ["explore_bench"]

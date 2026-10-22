@@ -4,3 +4,11 @@ __pycache__/
 */gif/
 .superlite/
 results/*
+.venv/
+.venv.backup.*/
+.conda-env/
+.conda-env.backup.*/
+.setup/
+*.egg-info/
+build/
+dist/
