@@ -37,6 +37,13 @@ def main(argv=None):
     evaluation.add_argument("--controller", choices=("mappo", "random", "wait", "cost", "mmpf"), default="mappo")
     evaluation.add_argument("--tasks", type=Path, required=True)
     evaluation.add_argument("--suite", nargs="+", choices=("familiar", "unseen", "validation"), default=["familiar", "unseen"])
+    # --maps shards an evaluation by map. MMPF runs about 4-27 decisions per
+    # minute depending on the map, so its 100 test episodes take about six
+    # days in one process; one job per map finishes in about a day. This
+    # replaces the out-of-repo helper ~/slurm/tools/eval_shard.py used on
+    # 2026-10-26, so sharding is now versioned and recorded in provenance.
+    # Used by hpc/jobs/mappo/run_baseline_shard.sbatch.
+    evaluation.add_argument("--maps", nargs="+", help="only these map names (file stems), e.g. one shard per map")
     evaluation.add_argument("--output", type=Path, required=True)
     scoring = commands.add_parser("score")
     scoring.add_argument("--inputs", nargs="+", type=Path, required=True)
@@ -88,6 +95,17 @@ def main(argv=None):
             controller = (RandomController() if args.controller == "random" else WaitController()
                           if args.controller == "wait" else ClassicalController(args.controller, None))
         tasks = [task for suite in args.suite for task in read_tasks(args.tasks, spec, suite)]
+        if args.maps:
+            # Filter AFTER read_tasks, so every shard still verifies the full
+            # frozen task table (hashes, spawns) before running its subset.
+            # Each episode is reseeded from its own task (Session.reset_task),
+            # so a shard produces the same episodes it would in a full run.
+            tasks = [task for task in tasks if Path(task.map_path).stem in args.maps]
+            # A typo in a map name must fail immediately, not produce an
+            # empty or partial shard that score() later rejects as incomplete.
+            missing = set(args.maps) - {Path(task.map_path).stem for task in tasks}
+            if missing:
+                parser.error("no tasks for maps {} in suites {}".format(sorted(missing), args.suite))
         evaluate(spec, tasks, args.output, controller, seed, checkpoint_hash)
     else:
         from .scoring import score
