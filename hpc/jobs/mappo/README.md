@@ -29,6 +29,19 @@ bash hpc/jobs/mappo/submit.sh evaluate mappo_omni_3p5_01 experiments/mappo_omni_
 bash hpc/jobs/mappo/submit.sh score mappo_omni_3p5_01 experiments/mappo_omni_3p5_v1.json
 ```
 
+Scripted controls run as one array, one task per controller × map (the
+`evaluate --maps` option), so slow planners such as MMPF finish in parallel:
+
+```bash
+bash hpc/jobs/mappo/submit_baselines.sh mappo_omni_3p5_01 experiments/mappo_omni_3p5_v1.json
+```
+
+Outputs go to `baselines/<controller>/<suite>__<map>/`; `score` pools the shards
+into one result per controller. `"navigation": "ground_truth"` in an experiment
+JSON (see `experiments/*_legacy_v1.json`) restores the legacy planner contract
+for every controller: goals still come from delivered beliefs, but A* may cross
+unseen free space. Scoring refuses to mix navigation contracts.
+
 Extra arguments after the JSON path are passed to `sbatch`, for example
 `--time=24:00:00`, `--partition=ada`, or `--cpus-per-task=8`. Defaults are
 12 hours and 16 GB. They are initial resource requests, not measured runtime
