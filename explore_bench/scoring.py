@@ -174,6 +174,17 @@ def score(inputs, output):
     output = Path(output)
     output.mkdir(parents=True, exist_ok=False)
     groups, inventories, curves = defaultdict(list), [], []
+    # Per-episode coverage traces, keyed by (controller, suite, training seed)
+    # and pooled across ALL input directories before curves are computed.
+    #
+    # Why: slow scripted planners are now run one directory per map
+    # (submit_baselines.sh -> evaluate --maps), e.g. ten MMPF directories.
+    # The old code built curves inside the directory loop, so MMPF appeared in
+    # coverage_curves.csv as ten separate per-map curves instead of one.
+    # Pooling here makes a sharded run score exactly like an unsharded one;
+    # aggregate.csv/per_seed.csv were already pooled via `groups` and did not
+    # change. Verified by test_sharded_evaluations_score_as_one_policy.
+    trajectories = defaultdict(list)
     physical_contract = None
     seen = set()
     for directory in inputs:
@@ -191,14 +202,17 @@ def score(inputs, output):
                 raise ValueError("duplicate policy/task result")
             seen.add(identity)
             groups[(row["method"], row["suite"], row["training_seed"])].append(row)
-        by_suite = defaultdict(list)
-        for row in rows:
-            by_suite[row["suite"]].append(row)
-        for suite, episodes in by_suite.items():
-            for step in range(spec["max_steps"] + 1):
-                values = [float(traces[row["episode_id"]][min(step, len(traces[row["episode_id"]]) - 1)]["team_coverage_ratio"]) for row in episodes]
-                curves.append({"method": record["controller"], "suite": suite, "training_seed": record["training_seed"],
-                               "step": step, "mean_coverage": statistics.mean(values)})
+            trajectories[(record["controller"], row["suite"], record["training_seed"])].append(
+                [float(item["team_coverage_ratio"]) for item in traces[row["episode_id"]]])
+    # One curve per (controller, suite, seed): the mean coverage over every
+    # pooled episode at each decision. Episodes that hit 99% early stop
+    # recording, so their final coverage is carried forward to the cap,
+    # the same convention as coverage AUC. Keys sort as strings because
+    # scripted controllers use "" as training seed while MAPPO uses ints.
+    for (method, suite, seed), series in sorted(trajectories.items(), key=lambda item: str(item[0])):
+        for step in range(physical_contract["max_steps"] + 1):
+            curves.append({"method": method, "suite": suite, "training_seed": seed, "step": step,
+                           "mean_coverage": statistics.mean(trace[min(step, len(trace) - 1)] for trace in series)})
     per_seed, aggregate = [], []
     for (method, suite, seed), rows in sorted(groups.items()):
         split, start = {"validation": ("validation", 10001), "familiar": ("train", 20001),

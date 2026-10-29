@@ -277,3 +277,30 @@ def test_process_workers_train_and_snapshot(spec, tmp_path):
     state = torch.load(tmp_path / "process/checkpoints/step_000000000008/training.pt", weights_only=False)
     assert len(state["worlds"]) == 2
     assert state["worlds"][0].session is not state["worlds"][1].session
+
+
+def test_sharded_evaluations_score_as_one_policy(spec, tmp_path):
+    """Per-map shards (evaluate --maps) must score like one unsharded run.
+
+    Runs the CLI exactly as run_baseline_shard.sbatch does, one directory per
+    map, then scores them together. Before 2026-10-28 coverage_curves.csv had
+    one curve per directory; it must now have one per method and suite. A
+    misspelled map must stop the CLI instead of producing an empty shard.
+    """
+    from explore_bench.__main__ import main
+    tasks = tmp_path / "tasks.json"
+    prepare(spec, tasks)
+    configuration_path = tmp_path / "configuration.json"
+    stems = [Path(name).stem for name in spec["maps"]["train"] + spec["maps"]["test"]]
+    shards = []
+    for suite, stem in zip(("familiar", "unseen"), stems):
+        shards.append(tmp_path / "wait" / stem)
+        assert main(["evaluate", "--controller", "wait", "--config", str(configuration_path), "--tasks", str(tasks),
+                     "--suite", suite, "--maps", stem, "--output", str(shards[-1])]) == 0
+    score(shards, tmp_path / "scores")
+    with (tmp_path / "scores" / "coverage_curves.csv").open() as handle:
+        curves = list(csv.DictReader(handle))
+    assert len(curves) == 2 * (spec["max_steps"] + 1)
+    with pytest.raises(SystemExit):
+        main(["evaluate", "--controller", "wait", "--config", str(configuration_path), "--tasks", str(tasks),
+              "--maps", "no_such_map", "--output", str(tmp_path / "missing")])
