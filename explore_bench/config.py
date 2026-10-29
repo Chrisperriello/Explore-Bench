@@ -66,12 +66,43 @@ def map_path(name):
     return path if path.is_absolute() else ROOT / path
 
 
+# Navigation contract: which map A* may route through when a robot moves.
+#
+# "belief" (the default, used by every run before 2026-10-28) lets a robot
+# route only through cells its delivered belief map marks free; unknown cells
+# count as walls. "ground_truth" is the historical legacy contract from the
+# original Explore-Bench grid simulator: goals are still chosen from delivered
+# beliefs, but the path may cross free space nobody has sensed yet.
+#
+# Why it exists: under "belief", Cost/MMPF plateau near 75-78% coverage
+# (mappo_omni_3p5_full_01 scores), while the Oct 7-8 legacy collection
+# (slurm/combined/level0/level0_validation_01) shows the same planners
+# finishing 80-87% of runs. The method ranking flips with this one rule, so
+# it must be an explicit, recorded experiment parameter rather than an
+# accident of which code path ran. See docs/mappo/decisions.md ("Perfect
+# sharing ... does not equal the legacy oracle navigation contract").
+#
+# Why it is optional instead of a DEFAULT key: digest(spec) is stored in
+# every tasks.json, checkpoint and manifest, and read_tasks() / resume refuse
+# any mismatch. Adding a default key would change the digest of all existing
+# experiments (including the running seed-5 pipeline). Keeping it absent
+# unless supplied means old configurations hash exactly as before; that is
+# asserted by test_navigation_is_optional_and_validated.
+#
+# Trace it: experiments/*_legacy_v1.json set it -> Session._navigation_map
+# (explore_bench/session.py) enforces it -> score() puts it in the physical
+# contract (explore_bench/scoring.py) so legacy and belief runs never mix.
+NAVIGATION = ("belief", "ground_truth")
+
+
 def configuration(path=None):
     value = copy.deepcopy(DEFAULT)
     if path is not None:
         with Path(path).open(encoding="utf-8") as handle:
             supplied = json.load(handle)
-        unknown = set(supplied) - set(value)
+        # "navigation" is the one accepted key outside DEFAULT (see NAVIGATION
+        # above); any other unknown key is still a typo and is rejected.
+        unknown = set(supplied) - set(value) - {"navigation"}
         if unknown:
             raise ValueError("unknown experiment keys: {}".format(sorted(unknown)))
         for key, item in supplied.items():
@@ -85,6 +116,11 @@ def configuration(path=None):
         raise ValueError("v1 is frozen to two robots")
     if value["sensor_type"] not in ("omnidirectional", "four_beam"):
         raise ValueError("unsupported sensor_type")
+    # Fail at configuration time, not hours into a Slurm job: a misspelled
+    # value such as "groundtruth" would otherwise silently fall back to
+    # belief routing in Session._navigation_map and label the run wrongly.
+    if value.get("navigation", "belief") not in NAVIGATION:
+        raise ValueError("navigation must be one of {}".format(NAVIGATION))
     for key in ("resolution", "sensor_range"):
         if not math.isfinite(value[key]) or value[key] <= 0:
             raise ValueError(key + " must be positive and finite")

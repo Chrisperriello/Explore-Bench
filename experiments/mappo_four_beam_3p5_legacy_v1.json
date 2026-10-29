@@ -1,0 +1,5 @@
+{
+  "name": "mappo_four_beam_3p5_legacy_v1",
+  "sensor_type": "four_beam",
+  "navigation": "ground_truth"
+}

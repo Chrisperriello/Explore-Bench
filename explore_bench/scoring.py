@@ -192,6 +192,13 @@ def score(inputs, output):
         spec = record["configuration"]
         contract = {key: spec[key] for key in ("num_agents", "resolution", "sensor_type", "sensor_range",
                     "communication", "target_coverage", "max_steps", "thresholds", "maps")}
+        # The navigation rule changes results as much as the sensor does
+        # (classical planners stall under "belief", finish under
+        # "ground_truth"), so it is part of the physical contract: scoring a
+        # legacy directory together with a belief directory raises below.
+        # .get() keeps pre-2026-10-28 manifests valid; they lack the key and
+        # were all belief routing.
+        contract["navigation"] = spec.get("navigation", "belief")
         if physical_contract is not None and contract != physical_contract:
             raise ValueError("score each sensor/channel/environment contract separately")
         physical_contract = contract

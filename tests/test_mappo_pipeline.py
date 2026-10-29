@@ -279,6 +279,40 @@ def test_process_workers_train_and_snapshot(spec, tmp_path):
     assert state["worlds"][0].session is not state["worlds"][1].session
 
 
+def test_navigation_is_optional_and_validated(tmp_path):
+    """Navigation must not change existing experiment digests, and typos must fail.
+
+    Every tasks.json, checkpoint and manifest stores digest(spec), and
+    read_tasks()/resume reject mismatches. If "navigation" silently appeared
+    in the default configuration, every pre-existing experiment (including
+    the running mappo_omni_3p5_full_01 seed 5) would stop validating.
+    """
+    from explore_bench.config import DEFAULT, digest
+    assert "navigation" not in configuration()
+    assert digest(configuration()) == digest(DEFAULT)
+    path = tmp_path / "bad.json"
+    path.write_text(json.dumps({"navigation": "teleport"}), encoding="utf-8")
+    with pytest.raises(ValueError, match="navigation"):
+        configuration(path)
+
+
+def test_ground_truth_navigation_routes_through_unseen_free_space(spec):
+    """The one behavioral difference between the two navigation contracts.
+
+    Pick a cell that is free in the true map but unknown to robot 0. Under
+    belief routing A* treats it as a wall, so route() returns only the start
+    (the robot holds). Under ground-truth routing a path to it exists. This is
+    the mechanism behind the classical planners' plateau under belief routing.
+    """
+    belief_env = start(spec)
+    oracle_env = start(dict(spec, navigation="ground_truth"))
+    unseen = [tuple(cell) for cell in np.argwhere((belief_env.gt_map == 254) & (belief_env.built_map[0] == 205))]
+    assert unseen
+    assert belief_env.route(0, unseen[0]) == [tuple(belief_env.agent_pos[0])]
+    path = oracle_env.route(0, unseen[0])
+    assert len(path) > 1 and tuple(path[-1]) == unseen[0]
+
+
 def test_sharded_evaluations_score_as_one_policy(spec, tmp_path):
     """Per-map shards (evaluate --maps) must score like one unsharded run.
 

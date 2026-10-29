@@ -163,6 +163,37 @@ class Session(GridEnv):
     def observation(self):
         return self.builder.build(self._info())
 
+    def _navigation_map(self, agent_id):
+        """Return the grid A* may route through for ``agent_id``.
+
+        This is the single enforcement point for the navigation contract
+        (see NAVIGATION in explore_bench/config.py). Every movement goes
+        through route() below, which calls this method, so all controllers
+        (MAPPO, Cost, MMPF, random, wait) obey the same rule:
+
+        - "belief" (default): the parent GridEnv copies the robot's delivered
+          belief and marks unknown cells occupied, so a robot can only travel
+          through space the team has already sensed.
+        - "ground_truth": return the true map, so A* may cross unseen free
+          space, matching the legacy Level-0 planner used by the original
+          paper's grid simulator and our Oct 7-8 baseline collection.
+
+        Only routing changes. Goal choice is untouched: MAPPO still snaps its
+        coordinates to frontiers of its belief (decode_coordinates) and the
+        classical selectors still read beliefs through baseline_view in
+        explore_bench/evaluation.py. Sensing, coverage and rewards are also
+        unchanged, so the two contracts differ in exactly one variable.
+
+        Why it matters: with belief routing the classical planners stall
+        near 75-78% coverage; with oracle routing they finish most maps.
+        Testing every method under both rules tells us whether MAPPO's lead
+        comes from better exploration or from coping with the routing limit.
+        Verified by test_ground_truth_navigation_routes_through_unseen_free_space.
+        """
+        if self.spec.get("navigation") == "ground_truth":
+            return self.gt_map
+        return super()._navigation_map(agent_id)
+
     def route(self, agent, goal):
         start, goal = tuple(self.agent_pos[agent]), tuple(map(int, goal))
         belief = self._navigation_map(agent)
