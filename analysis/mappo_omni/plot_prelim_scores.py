@@ -84,7 +84,7 @@ def figure_scores(aggregate, output, seeds):
     axes[0].legend(loc="upper right", frameon=False, labelcolor=INK2)
     fig.suptitle("360° sensor, 3.5 m, 2 robots: MAPPO vs scripted planners on the frozen test tasks",
                  x=0.01, ha="left", fontsize=13, color=INK)
-    fig.text(0.01, 0.005, "Preliminary: MAPPO = {} training seeds, whiskers = 95% bootstrap interval over seeds. "
+    fig.text(0.01, 0.005, "MAPPO = {} training seeds, whiskers = 95% bootstrap interval over seeds. "
              "Scripted planners are deterministic single runs (80 familiar + 20 unseen episodes).".format(seeds),
              fontsize=9, color=MUTED)
     fig.tight_layout(rect=(0, 0.03, 1, 0.95))
