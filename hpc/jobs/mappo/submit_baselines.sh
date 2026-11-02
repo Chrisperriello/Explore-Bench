@@ -16,6 +16,8 @@
 #       experiments/mappo_omni_3p5_legacy_v1.json
 # Extra arguments go straight to sbatch, e.g. --time=2-00:00:00.
 # EXPLORE_MAPPO_CONCURRENCY caps simultaneous tasks (default 20).
+# EXPLORE_MAPPO_CONTROLLERS picks controllers (default "random wait cost
+# mmpf"), e.g. "cost mmpf" to rerun only the frontier planners.
 set -euo pipefail
 unset PYTHONHOME PYTHONPATH
 export PYTHONNOUSERSITE=1
@@ -52,12 +54,15 @@ fi
 # from the config's own map splits (familiar = train maps, unseen = test
 # maps) so it can never drift from the frozen task design.
 SHARDS="${LOGS}/shards.txt"
-"$PYTHON" - "$CONFIG" > "$SHARDS" <<'PY'
+"$PYTHON" - "$CONFIG" ${EXPLORE_MAPPO_CONTROLLERS:-random wait cost mmpf} > "$SHARDS" <<'PY'
 import sys
 from pathlib import Path
 from explore_bench.config import configuration
 spec = configuration(sys.argv[1])
-for controller in ("random", "wait", "cost", "mmpf"):
+controllers = sys.argv[2:]
+if not controllers or set(controllers) - {"random", "wait", "cost", "mmpf"}:
+    raise SystemExit("EXPLORE_MAPPO_CONTROLLERS must name random, wait, cost and/or mmpf")
+for controller in controllers:
     for suite, split in (("familiar", "train"), ("unseen", "test")):
         for name in spec["maps"][split]:
             print(controller, suite, Path(name).stem)
