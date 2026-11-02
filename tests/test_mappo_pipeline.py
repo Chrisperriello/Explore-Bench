@@ -338,3 +338,22 @@ def test_sharded_evaluations_score_as_one_policy(spec, tmp_path):
     with pytest.raises(SystemExit):
         main(["evaluate", "--controller", "wait", "--config", str(configuration_path), "--tasks", str(tasks),
               "--maps", "no_such_map", "--output", str(tmp_path / "missing")])
+
+
+def test_classical_distance_map_does_not_wrap_on_uint8_beliefs():
+    """Cost/MMPF rank frontiers by BFS distance on the delivered belief.
+
+    Belief maps are uint8. The distance map used to inherit that dtype, so
+    distances above 255 wrapped modulo 256 and a far frontier looked near,
+    which made the scripted planners oscillate between two cells. Distances
+    on uint8 and float64 (legacy complete_map) inputs must now agree.
+    """
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "grid_simulator"))
+    from collect_experiments import HeadlessGridEnv
+    grid = np.zeros((3, 400), dtype=np.uint8)
+    grid[1, 1:-1] = 254
+    env = object.__new__(HeadlessGridEnv)
+    as_belief = env.dismapConstruction_start_target([1, 1], grid)
+    as_legacy = env.dismapConstruction_start_target([1, 1], grid.astype(np.float64))
+    assert as_belief[1, 300] == 299
+    np.testing.assert_array_equal(as_belief, as_legacy)

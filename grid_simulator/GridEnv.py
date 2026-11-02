@@ -1100,7 +1100,15 @@ class GridEnv(gym.Env):
         curr_iter.append(curr)
 
         dismap_backup = copy.deepcopy(map)
-        dismap_ = copy.deepcopy(map)
+        # The distance map must be a wide signed type. Legacy runs pass the
+        # float64 complete_map, but communication and research sessions pass
+        # uint8 belief maps; copying those kept uint8, so the -2/-1/-500
+        # markers wrapped and every BFS distance above 255 wrapped modulo
+        # 256. A frontier 260 cells away then looked 4 cells away, Cost/MMPF
+        # flipped between far frontiers each decision and shuttled between
+        # two cells for the rest of the episode. float64 matches the legacy
+        # input exactly, so legacy results are unchanged.
+        dismap_ = np.array(map, dtype=np.float64)
         # dismap_: obstacle -2  unknown -1 free 0
         # built_map: obstacle 0 unknown 205 free 254
         for i in range(dismap_.shape[0]):
