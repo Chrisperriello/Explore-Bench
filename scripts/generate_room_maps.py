@@ -1,7 +1,7 @@
 """Generate room-and-door maps, validate them with the benchmark's own code, show them, then delete them.
 
 Usage: python scripts/generate_room_maps.py [--count 6] [--seed 1] [--extra-doors 0]
-                                            [--smoke-steps 3] [--preview PNG]
+                                            [--courtyard] [--smoke-steps 3] [--preview PNG]
 
 Why: the benchmark has only 2 unseen test maps (20 episodes per planner), and
 both are door-free loops, so "unseen" tests one new map shape rather than
@@ -15,6 +15,11 @@ Maps copy the format of the hand-made ones (room_1.pgm measured 2026-11-06):
 wall, 2-cell inner walls and doors of about 1.4 m. Rooms come from recursive
 splitting (binary space partition): each split adds one wall with one door, so
 the rooms always form a tree. --extra-doors cuts more doors to create loops.
+
+--courtyard puts a solid block in the middle of the building and splits only
+the ring of space around it, so every map has one large loop like the core of
+square_loop (166-202 m² islands in the test maps). Extra doors alone only
+loop around short wall pieces of a few m².
 """
 
 import argparse
@@ -39,9 +44,10 @@ DOOR_END_GAP = 4        # keep doors this far from the wall's ends
 DOOR_PAD = 3            # new walls stay this far from existing doors
 MIN_PASSAGE = 9         # validation: no passage narrower than 0.9 m
 AREA_M2 = (100, 400)    # validation: the hand-made maps span 118-380 m² free
+MIN_COURTYARD = 40      # smallest courtyard side, 4 m
 
 
-def generate(rng, extra_doors=0, max_depth=4):
+def generate(rng, extra_doors=0, max_depth=4, courtyard=False):
     grid = np.full((SIZE, SIZE), OUTSIDE, dtype=np.uint8)
     height, width = rng.randint(140, 195), rng.randint(140, 195)
     top, left = rng.randint(MARGIN, SIZE - MARGIN - height), rng.randint(MARGIN, SIZE - MARGIN - width)
@@ -90,7 +96,23 @@ def generate(rng, extra_doors=0, max_depth=4):
             split(r0, c0, r0 + cut, c1, depth + 1)
             split(r0 + cut + INNER_WALL, c0, r1, c1, depth + 1)
 
-    split(top + OUTER_WALL, left + OUTER_WALL, top + height - OUTER_WALL, left + width - OUTER_WALL, 0)
+    r0, c0 = top + OUTER_WALL, left + OUTER_WALL
+    r1, c1 = top + height - OUTER_WALL, left + width - OUTER_WALL
+    if not courtyard:
+        split(r0, c0, r1, c1, 0)
+    else:
+        # Each side band of the ring is at least one room deep, so the ring
+        # stays passable; bands are split like the rest of the building, and
+        # every split wall gets a door, so the way round is never closed.
+        rows, columns = r1 - r0, c1 - c0
+        yard_rows = rng.randint(MIN_COURTYARD, rows - 2 * MIN_ROOM)
+        yard_columns = rng.randint(MIN_COURTYARD, columns - 2 * MIN_ROOM)
+        y0 = r0 + rng.randint(MIN_ROOM, rows - MIN_ROOM - yard_rows)
+        x0 = c0 + rng.randint(MIN_ROOM, columns - MIN_ROOM - yard_columns)
+        y1, x1 = y0 + yard_rows, x0 + yard_columns
+        grid[y0:y1, x0:x1] = WALL
+        for band in ((r0, c0, y0, c1), (y1, c0, r1, c1), (y0, c0, y1, x0), (y0, x1, y1, c1)):
+            split(*band, 1)
 
     # Extra doors turn the tree of rooms into a graph with loops. A door is
     # only cut where the wall has free space on both sides along its whole
@@ -114,7 +136,11 @@ def generate(rng, extra_doors=0, max_depth=4):
         if np.all(grid[cells] == WALL) and all(np.all(side == FREE) for side in sides):
             grid[cells] = FREE
             added += 1
-    return grid, len(walls) + 1, added
+    # Each wall splits one region in two. The courtyard ring starts as one
+    # region that its first wall only opens, hence one fewer room. Walls that
+    # end in the open part of a ring corner add none, so courtyard counts are
+    # approximate.
+    return grid, max(1, len(walls) + (0 if courtyard else 1)), added
 
 
 def components(mask):
@@ -221,6 +247,7 @@ def main(argv=None):
     parser.add_argument("--count", type=int, default=6)
     parser.add_argument("--seed", type=int, default=1, help="map i uses seed + i, so runs are reproducible")
     parser.add_argument("--extra-doors", type=int, default=0, help="doors added after splitting, creating loops")
+    parser.add_argument("--courtyard", action="store_true", help="build round a central block (one large loop)")
     parser.add_argument("--smoke-steps", type=int, default=3, help="Cost decisions to run per map (0 skips)")
     parser.add_argument("--preview", type=Path, help="save the figure here instead of opening a window")
     args = parser.parse_args(argv)
@@ -228,7 +255,7 @@ def main(argv=None):
     with tempfile.TemporaryDirectory(prefix="explore_bench_maps_") as directory:
         for index in range(args.count):
             seed = args.seed + index
-            grid, rooms, loops = generate(random.Random(seed), args.extra_doors)
+            grid, rooms, loops = generate(random.Random(seed), args.extra_doors, courtyard=args.courtyard)
             name = "rooms_seed_{}".format(seed)
             path = Path(directory) / (name + ".pgm")
             Image.fromarray(grid).save(path)
