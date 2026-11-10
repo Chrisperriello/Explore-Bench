@@ -9,6 +9,7 @@ episode mean because every shard holds the same number of episodes.
 """
 
 import csv
+import json
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -77,12 +78,12 @@ def bar_panel(ax, aggregate, metric, title, percent):
         ax.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0))
 
 
-def figure_scores(aggregate, output, seeds):
+def figure_scores(aggregate, output, seeds, setting):
     fig, axes = plt.subplots(1, 2, figsize=(13, 4.8))
     bar_panel(axes[0], aggregate, "success_rate", "Episodes reaching 99% coverage", True)
     bar_panel(axes[1], aggregate, "mean_coverage_auc", "Coverage AUC (higher = explores faster)", False)
-    axes[0].legend(loc="upper right", frameon=False, labelcolor=INK2)
-    fig.suptitle("360° sensor, 3.5 m, 2 robots: MAPPO vs scripted planners on the frozen test tasks",
+    axes[1].legend(loc="upper right", frameon=False, labelcolor=INK2)
+    fig.suptitle(setting + ": MAPPO vs scripted planners on the frozen test tasks",
                  x=0.01, ha="left", fontsize=13, color=INK)
     fig.text(0.01, 0.005, "MAPPO = {} training seeds, whiskers = 95% bootstrap interval over seeds. "
              "Scripted planners are deterministic single runs (80 familiar + 20 unseen episodes).".format(seeds),
@@ -168,7 +169,14 @@ def main():
     aggregate = {(r["method"], r["suite"], r["metric"]): r for r in read(scores / "aggregate.csv")}
     per_seed = read(scores / "per_seed.csv")
     seeds = len({r["training_seed"] for r in per_seed if r["method"] == "mappo"})
-    figure_scores(aggregate, output, seeds)
+    # The sensor, range, team size and routing rule come from the scores'
+    # own physical contract, so four-beam or legacy scores are never titled
+    # as the 360° belief study.
+    contract = json.loads((scores / "inventory.json").read_text())["physical_contract"]
+    sensor = {"omnidirectional": "360° sensor", "four_beam": "Four-beam sensor"}[contract["sensor_type"]]
+    routing = {"belief": "belief routing", "ground_truth": "legacy routing"}[contract["navigation"]]
+    setting = "{}, {:g} m, {} robots, {}".format(sensor, contract["sensor_range"], contract["num_agents"], routing)
+    figure_scores(aggregate, output, seeds, setting)
     figure_curves(read(scores / "coverage_curves.csv"), output, seeds)
     figure_seeds(per_seed, output)
     print(output)
