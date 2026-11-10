@@ -1,0 +1,984 @@
+{
+  "schema": 1,
+  "name": "rooms_v1",
+  "source": "rooms",
+  "created_utc": "2026-11-10T21:55:28.185033+00:00",
+  "commit": "27375456e7d17de1ff03f494f18c1841c432cf52",
+  "sources_dirty": false,
+  "parameters": {
+    "seed": 1,
+    "splits": {
+      "test": 30
+    },
+    "smoke_steps": 3,
+    "extra_doors": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "courtyards": [
+      0,
+      1
+    ]
+  },
+  "generator": {
+    "size": 250,
+    "margin": 20,
+    "min_room": 30,
+    "door": [
+      10,
+      16
+    ],
+    "min_passage": 9,
+    "min_courtyard": 40,
+    "area_m2": [
+      100,
+      400
+    ]
+  },
+  "grid": {
+    "resolution_m": 0.1,
+    "free": 254,
+    "wall": 0,
+    "outside": 205
+  },
+  "attempts": 30,
+  "rejected": [],
+  "splits": {
+    "test": [
+      "maps/rooms_v1/rooms_v1_seed_1.pgm",
+      "maps/rooms_v1/rooms_v1_seed_2.pgm",
+      "maps/rooms_v1/rooms_v1_seed_3.pgm",
+      "maps/rooms_v1/rooms_v1_seed_4.pgm",
+      "maps/rooms_v1/rooms_v1_seed_5.pgm",
+      "maps/rooms_v1/rooms_v1_seed_6.pgm",
+      "maps/rooms_v1/rooms_v1_seed_7.pgm",
+      "maps/rooms_v1/rooms_v1_seed_8.pgm",
+      "maps/rooms_v1/rooms_v1_seed_9.pgm",
+      "maps/rooms_v1/rooms_v1_seed_10.pgm",
+      "maps/rooms_v1/rooms_v1_seed_11.pgm",
+      "maps/rooms_v1/rooms_v1_seed_12.pgm",
+      "maps/rooms_v1/rooms_v1_seed_13.pgm",
+      "maps/rooms_v1/rooms_v1_seed_14.pgm",
+      "maps/rooms_v1/rooms_v1_seed_15.pgm",
+      "maps/rooms_v1/rooms_v1_seed_16.pgm",
+      "maps/rooms_v1/rooms_v1_seed_17.pgm",
+      "maps/rooms_v1/rooms_v1_seed_18.pgm",
+      "maps/rooms_v1/rooms_v1_seed_19.pgm",
+      "maps/rooms_v1/rooms_v1_seed_20.pgm",
+      "maps/rooms_v1/rooms_v1_seed_21.pgm",
+      "maps/rooms_v1/rooms_v1_seed_22.pgm",
+      "maps/rooms_v1/rooms_v1_seed_23.pgm",
+      "maps/rooms_v1/rooms_v1_seed_24.pgm",
+      "maps/rooms_v1/rooms_v1_seed_25.pgm",
+      "maps/rooms_v1/rooms_v1_seed_26.pgm",
+      "maps/rooms_v1/rooms_v1_seed_27.pgm",
+      "maps/rooms_v1/rooms_v1_seed_28.pgm",
+      "maps/rooms_v1/rooms_v1_seed_29.pgm",
+      "maps/rooms_v1/rooms_v1_seed_30.pgm"
+    ]
+  },
+  "maps": [
+    {
+      "name": "rooms_v1_seed_1",
+      "file": "rooms_v1_seed_1.pgm",
+      "sha256": "bdd0257c1cfd76fad90b00e0f1108d67f333e0fee7a5c7c9e51d6acc1dfe0467",
+      "split": "test",
+      "seed": 1,
+      "rooms": 9,
+      "courtyard": false,
+      "extra_doors_requested": 0,
+      "extra_doors_added": 0,
+      "tags": {
+        "free_area_m2": 243.4,
+        "free_components": 1,
+        "loops": 0,
+        "largest_island_m2": 0.0,
+        "narrow_share": 0.2761,
+        "geodesic_diameter_m": 44.8,
+        "free_height_m": 14.6,
+        "free_width_m": 17.4,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "(250, 250) uint8",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "passages >= 0.9 m": "1 region(s) after removing narrow gaps",
+        "free area": "243 m\u00b2",
+        "benchmark loads it": "spawns [[100, 181], [187, 140]], 3 Cost steps, coverage 21.8%"
+      }
+    },
+    {
+      "name": "rooms_v1_seed_2",
+      "file": "rooms_v1_seed_2.pgm",
+      "sha256": "7b4b301eb3e8a1e52d0970e3298f793ced1d7aa56e1b594b89442c571af3e19e",
+      "split": "test",
+      "seed": 2,
+      "rooms": 7,
+      "courtyard": false,
+      "extra_doors_requested": 1,
+      "extra_doors_added": 1,
+      "tags": {
+        "free_area_m2": 360.5,
+        "free_components": 1,
+        "loops": 1,
+        "largest_island_m2": 0.54,
+        "narrow_share": 0.1967,
+        "geodesic_diameter_m": 43.7,
+        "free_height_m": 19.3,
+        "free_width_m": 19.2,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "(250, 250) uint8",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "passages >= 0.9 m": "1 region(s) after removing narrow gaps",
+        "free area": "360 m\u00b2",
+        "benchmark loads it": "spawns [[41, 121], [53, 137]], 3 Cost steps, coverage 13.8%"
+      }
+    },
+    {
+      "name": "rooms_v1_seed_3",
+      "file": "rooms_v1_seed_3.pgm",
+      "sha256": "2a1847a21f76fb89d934b1d9c20c25d863c8407f4208305fe6ee5fee097e07e4",
+      "split": "test",
+      "seed": 3,
+      "rooms": 9,
+      "courtyard": false,
+      "extra_doors_requested": 2,
+      "extra_doors_added": 2,
+      "tags": {
+        "free_area_m2": 257.63,
+        "free_components": 1,
+        "loops": 2,
+        "largest_island_m2": 1.18,
+        "narrow_share": 0.2611,
+        "geodesic_diameter_m": 46.0,
+        "free_height_m": 15.3,
+        "free_width_m": 17.5,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "(250, 250) uint8",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "passages >= 0.9 m": "1 region(s) after removing narrow gaps",
+        "free area": "258 m\u00b2",
+        "benchmark loads it": "spawns [[100, 109], [171, 72]], 3 Cost steps, coverage 16.9%"
+      }
+    },
+    {
+      "name": "rooms_v1_seed_4",
+      "file": "rooms_v1_seed_4.pgm",
+      "sha256": "476d45a78080f772c0c4a96b6bf218f7b2bc9ab5e8b56fa382cdee942e766937",
+      "split": "test",
+      "seed": 4,
+      "rooms": 7,
+      "courtyard": false,
+      "extra_doors_requested": 3,
+      "extra_doors_added": 3,
+      "tags": {
+        "free_area_m2": 233.23,
+        "free_components": 1,
+        "loops": 3,
+        "largest_island_m2": 1.88,
+        "narrow_share": 0.232,
+        "geodesic_diameter_m": 34.4,
+        "free_height_m": 15.3,
+        "free_width_m": 15.7,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "(250, 250) uint8",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "passages >= 0.9 m": "1 region(s) after removing narrow gaps",
+        "free area": "233 m\u00b2",
+        "benchmark loads it": "spawns [[77, 141], [92, 188]], 3 Cost steps, coverage 24.3%"
+      }
+    },
+    {
+      "name": "rooms_v1_seed_5",
+      "file": "rooms_v1_seed_5.pgm",
+      "sha256": "1c3b23592a56d5aac9a10522c25deee7d39f91c78100c780eada47b061af0b44",
+      "split": "test",
+      "seed": 5,
+      "rooms": 5,
+      "courtyard": true,
+      "extra_doors_requested": 0,
+      "extra_doors_added": 0,
+      "tags": {
+        "free_area_m2": 225.53,
+        "free_components": 1,
+        "loops": 3,
+        "largest_island_m2": 44.49,
+        "narrow_share": 0.2322,
+        "geodesic_diameter_m": 32.9,
+        "free_height_m": 17.7,
+        "free_width_m": 15.4,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "(250, 250) uint8",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "passages >= 0.9 m": "1 region(s) after removing narrow gaps",
+        "free area": "226 m\u00b2",
+        "benchmark loads it": "spawns [[205, 223], [104, 125]], 3 Cost steps, coverage 20.9%"
+      }
+    },
+    {
+      "name": "rooms_v1_seed_6",
+      "file": "rooms_v1_seed_6.pgm",
+      "sha256": "e6254adff707b44e1e12c444c53954d3adcb690c998894caf54be52f09248b72",
+      "split": "test",
+      "seed": 6,
+      "rooms": 11,
+      "courtyard": true,
+      "extra_doors_requested": 1,
+      "extra_doors_added": 1,
+      "tags": {
+        "free_area_m2": 286.84,
+        "free_components": 1,
+        "loops": 6,
+        "largest_island_m2": 32.72,
+        "narrow_share": 0.2591,
+        "geodesic_diameter_m": 36.0,
+        "free_height_m": 18.8,
+        "free_width_m": 17.4,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "(250, 250) uint8",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "passages >= 0.9 m": "1 region(s) after removing narrow gaps",
+        "free area": "287 m\u00b2",
+        "benchmark loads it": "spawns [[195, 84], [152, 64]], 3 Cost steps, coverage 17.3%"
+      }
+    },
+    {
+      "name": "rooms_v1_seed_7",
+      "file": "rooms_v1_seed_7.pgm",
+      "sha256": "ad3fc19fe5d620ca3c039762fd836723e2cffdc0d32cd894e4b671a720c7cdc2",
+      "split": "test",
+      "seed": 7,
+      "rooms": 6,
+      "courtyard": true,
+      "extra_doors_requested": 2,
+      "extra_doors_added": 2,
+      "tags": {
+        "free_area_m2": 209.06,
+        "free_components": 1,
+        "loops": 6,
+        "largest_island_m2": 19.72,
+        "narrow_share": 0.249,
+        "geodesic_diameter_m": 30.3,
+        "free_height_m": 15.8,
+        "free_width_m": 14.7,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "(250, 250) uint8",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "passages >= 0.9 m": "1 region(s) after removing narrow gaps",
+        "free area": "209 m\u00b2",
+        "benchmark loads it": "spawns [[119, 202], [80, 155]], 3 Cost steps, coverage 27.0%"
+      }
+    },
+    {
+      "name": "rooms_v1_seed_8",
+      "file": "rooms_v1_seed_8.pgm",
+      "sha256": "5b7e710034ca3c82d5d097b874c3931f09eb7d7eeb1dcf979eb3c74a0f8fc90b",
+      "split": "test",
+      "seed": 8,
+      "rooms": 4,
+      "courtyard": true,
+      "extra_doors_requested": 3,
+      "extra_doors_added": 3,
+      "tags": {
+        "free_area_m2": 198.28,
+        "free_components": 1,
+        "loops": 4,
+        "largest_island_m2": 45.2,
+        "narrow_share": 0.2372,
+        "geodesic_diameter_m": 31.1,
+        "free_height_m": 15.2,
+        "free_width_m": 16.1,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "(250, 250) uint8",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "passages >= 0.9 m": "1 region(s) after removing narrow gaps",
+        "free area": "198 m\u00b2",
+        "benchmark loads it": "spawns [[108, 29], [148, 147]], 3 Cost steps, coverage 26.9%"
+      }
+    },
+    {
+      "name": "rooms_v1_seed_9",
+      "file": "rooms_v1_seed_9.pgm",
+      "sha256": "e53f4e9b21101cf8a95a0d4e4c2c15f7708b4c85515c4a93f5fa7bf44cc625dd",
+      "split": "test",
+      "seed": 9,
+      "rooms": 8,
+      "courtyard": false,
+      "extra_doors_requested": 0,
+      "extra_doors_added": 0,
+      "tags": {
+        "free_area_m2": 285.85,
+        "free_components": 1,
+        "loops": 0,
+        "largest_island_m2": 0.0,
+        "narrow_share": 0.2294,
+        "geodesic_diameter_m": 47.0,
+        "free_height_m": 16.7,
+        "free_width_m": 17.7,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "(250, 250) uint8",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "passages >= 0.9 m": "1 region(s) after removing narrow gaps",
+        "free area": "286 m\u00b2",
+        "benchmark loads it": "spawns [[133, 56], [161, 152]], 3 Cost steps, coverage 24.0%"
+      }
+    },
+    {
+      "name": "rooms_v1_seed_10",
+      "file": "rooms_v1_seed_10.pgm",
+      "sha256": "df39a908caeb546f1f1c6cc238c2f318be6255fd791b320b10196e9ddadfffdd",
+      "split": "test",
+      "seed": 10,
+      "rooms": 7,
+      "courtyard": false,
+      "extra_doors_requested": 1,
+      "extra_doors_added": 1,
+      "tags": {
+        "free_area_m2": 235.62,
+        "free_components": 1,
+        "loops": 1,
+        "largest_island_m2": 0.1,
+        "narrow_share": 0.2416,
+        "geodesic_diameter_m": 39.9,
+        "free_height_m": 17.4,
+        "free_width_m": 14.0,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "(250, 250) uint8",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "passages >= 0.9 m": "1 region(s) after removing narrow gaps",
+        "free area": "236 m\u00b2",
+        "benchmark loads it": "spawns [[187, 105], [55, 201]], 3 Cost steps, coverage 26.3%"
+      }
+    },
+    {
+      "name": "rooms_v1_seed_11",
+      "file": "rooms_v1_seed_11.pgm",
+      "sha256": "f1f94725b76ac79ce6a16606ed89042014fa0d13a45bf83e33140b7b7e0495cd",
+      "split": "test",
+      "seed": 11,
+      "rooms": 10,
+      "courtyard": false,
+      "extra_doors_requested": 2,
+      "extra_doors_added": 2,
+      "tags": {
+        "free_area_m2": 307.96,
+        "free_components": 1,
+        "loops": 2,
+        "largest_island_m2": 0.56,
+        "narrow_share": 0.2563,
+        "geodesic_diameter_m": 40.3,
+        "free_height_m": 16.6,
+        "free_width_m": 19.3,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "(250, 250) uint8",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "passages >= 0.9 m": "1 region(s) after removing narrow gaps",
+        "free area": "308 m\u00b2",
+        "benchmark loads it": "spawns [[135, 69], [209, 64]], 3 Cost steps, coverage 20.1%"
+      }
+    },
+    {
+      "name": "rooms_v1_seed_12",
+      "file": "rooms_v1_seed_12.pgm",
+      "sha256": "2ffc617fc506c1eff9f78d362c2038132493cae62099d7eeea3f56d5c504e3e3",
+      "split": "test",
+      "seed": 12,
+      "rooms": 11,
+      "courtyard": false,
+      "extra_doors_requested": 3,
+      "extra_doors_added": 3,
+      "tags": {
+        "free_area_m2": 248.9,
+        "free_components": 1,
+        "loops": 3,
+        "largest_island_m2": 3.3,
+        "narrow_share": 0.2936,
+        "geodesic_diameter_m": 32.1,
+        "free_height_m": 16.8,
+        "free_width_m": 15.5,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "(250, 250) uint8",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "passages >= 0.9 m": "1 region(s) after removing narrow gaps",
+        "free area": "249 m\u00b2",
+        "benchmark loads it": "spawns [[159, 84], [112, 171]], 3 Cost steps, coverage 19.4%"
+      }
+    },
+    {
+      "name": "rooms_v1_seed_13",
+      "file": "rooms_v1_seed_13.pgm",
+      "sha256": "a167a9ebe86a7a28eeedec5ca352e828e2bf501d221f194b66ba62e24a924599",
+      "split": "test",
+      "seed": 13,
+      "rooms": 7,
+      "courtyard": true,
+      "extra_doors_requested": 0,
+      "extra_doors_added": 0,
+      "tags": {
+        "free_area_m2": 152.22,
+        "free_components": 1,
+        "loops": 1,
+        "largest_island_m2": 86.78,
+        "narrow_share": 0.3237,
+        "geodesic_diameter_m": 30.8,
+        "free_height_m": 15.4,
+        "free_width_m": 15.6,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "(250, 250) uint8",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "passages >= 0.9 m": "1 region(s) after removing narrow gaps",
+        "free area": "152 m\u00b2",
+        "benchmark loads it": "spawns [[91, 153], [94, 219]], 3 Cost steps, coverage 16.8%"
+      }
+    },
+    {
+      "name": "rooms_v1_seed_14",
+      "file": "rooms_v1_seed_14.pgm",
+      "sha256": "464536196f70e39dd6e48ea82a57cc0d52e286388c2a5ccd756448a6fddfe457",
+      "split": "test",
+      "seed": 14,
+      "rooms": 5,
+      "courtyard": true,
+      "extra_doors_requested": 1,
+      "extra_doors_added": 1,
+      "tags": {
+        "free_area_m2": 208.6,
+        "free_components": 1,
+        "loops": 6,
+        "largest_island_m2": 43.98,
+        "narrow_share": 0.2477,
+        "geodesic_diameter_m": 31.9,
+        "free_height_m": 14.4,
+        "free_width_m": 17.7,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "(250, 250) uint8",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "passages >= 0.9 m": "1 region(s) after removing narrow gaps",
+        "free area": "209 m\u00b2",
+        "benchmark loads it": "spawns [[72, 60], [192, 51]], 3 Cost steps, coverage 18.9%"
+      }
+    },
+    {
+      "name": "rooms_v1_seed_15",
+      "file": "rooms_v1_seed_15.pgm",
+      "sha256": "1b2fb230d73873834ba34595c3a9f4bd5756b084380aa05a930e5172b1747b63",
+      "split": "test",
+      "seed": 15,
+      "rooms": 6,
+      "courtyard": true,
+      "extra_doors_requested": 2,
+      "extra_doors_added": 2,
+      "tags": {
+        "free_area_m2": 176.66,
+        "free_components": 1,
+        "loops": 2,
+        "largest_island_m2": 29.62,
+        "narrow_share": 0.2767,
+        "geodesic_diameter_m": 28.7,
+        "free_height_m": 15.1,
+        "free_width_m": 13.8,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "(250, 250) uint8",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "passages >= 0.9 m": "1 region(s) after removing narrow gaps",
+        "free area": "177 m\u00b2",
+        "benchmark loads it": "spawns [[116, 51], [56, 136]], 3 Cost steps, coverage 23.2%"
+      }
+    },
+    {
+      "name": "rooms_v1_seed_16",
+      "file": "rooms_v1_seed_16.pgm",
+      "sha256": "26342644bbed3ed4a2076cf26b9b6df5ffd4036e6c3ed44e3f000d77ccfe0758",
+      "split": "test",
+      "seed": 16,
+      "rooms": 7,
+      "courtyard": true,
+      "extra_doors_requested": 3,
+      "extra_doors_added": 3,
+      "tags": {
+        "free_area_m2": 221.7,
+        "free_components": 1,
+        "loops": 5,
+        "largest_island_m2": 46.62,
+        "narrow_share": 0.2383,
+        "geodesic_diameter_m": 32.7,
+        "free_height_m": 16.1,
+        "free_width_m": 16.8,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "(250, 250) uint8",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "passages >= 0.9 m": "1 region(s) after removing narrow gaps",
+        "free area": "222 m\u00b2",
+        "benchmark loads it": "spawns [[130, 199], [168, 43]], 3 Cost steps, coverage 17.8%"
+      }
+    },
+    {
+      "name": "rooms_v1_seed_17",
+      "file": "rooms_v1_seed_17.pgm",
+      "sha256": "c3a5d43b2e8252dd5466c38f1560a038ef3a22af80ca87530a03bdea708c3b61",
+      "split": "test",
+      "seed": 17,
+      "rooms": 8,
+      "courtyard": false,
+      "extra_doors_requested": 0,
+      "extra_doors_added": 0,
+      "tags": {
+        "free_area_m2": 270.66,
+        "free_components": 1,
+        "loops": 0,
+        "largest_island_m2": 0.0,
+        "narrow_share": 0.2402,
+        "geodesic_diameter_m": 51.6,
+        "free_height_m": 17.1,
+        "free_width_m": 16.4,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "(250, 250) uint8",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "passages >= 0.9 m": "1 region(s) after removing narrow gaps",
+        "free area": "271 m\u00b2",
+        "benchmark loads it": "spawns [[147, 200], [125, 137]], 3 Cost steps, coverage 20.6%"
+      }
+    },
+    {
+      "name": "rooms_v1_seed_18",
+      "file": "rooms_v1_seed_18.pgm",
+      "sha256": "1089d1e12256f463bd98c400fdf873ec47b5285d36dde1df33347a7524d1f075",
+      "split": "test",
+      "seed": 18,
+      "rooms": 6,
+      "courtyard": false,
+      "extra_doors_requested": 1,
+      "extra_doors_added": 1,
+      "tags": {
+        "free_area_m2": 209.69,
+        "free_components": 1,
+        "loops": 1,
+        "largest_island_m2": 0.1,
+        "narrow_share": 0.2331,
+        "geodesic_diameter_m": 45.7,
+        "free_height_m": 14.9,
+        "free_width_m": 14.5,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "(250, 250) uint8",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "passages >= 0.9 m": "1 region(s) after removing narrow gaps",
+        "free area": "210 m\u00b2",
+        "benchmark loads it": "spawns [[104, 188], [91, 126]], 3 Cost steps, coverage 24.9%"
+      }
+    },
+    {
+      "name": "rooms_v1_seed_19",
+      "file": "rooms_v1_seed_19.pgm",
+      "sha256": "db5ea8c8f5c6aad8d31e124561bab0836b87e94306785584e5e57378a21999d1",
+      "split": "test",
+      "seed": 19,
+      "rooms": 6,
+      "courtyard": false,
+      "extra_doors_requested": 2,
+      "extra_doors_added": 2,
+      "tags": {
+        "free_area_m2": 246.36,
+        "free_components": 1,
+        "loops": 2,
+        "largest_island_m2": 2.2,
+        "narrow_share": 0.2213,
+        "geodesic_diameter_m": 32.5,
+        "free_height_m": 18.1,
+        "free_width_m": 14.0,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "(250, 250) uint8",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "passages >= 0.9 m": "1 region(s) after removing narrow gaps",
+        "free area": "246 m\u00b2",
+        "benchmark loads it": "spawns [[209, 123], [56, 124]], 3 Cost steps, coverage 27.4%"
+      }
+    },
+    {
+      "name": "rooms_v1_seed_20",
+      "file": "rooms_v1_seed_20.pgm",
+      "sha256": "4c7924789d0007bb7790a912abe14dbbe62164ba27c00e336ced228576712217",
+      "split": "test",
+      "seed": 20,
+      "rooms": 7,
+      "courtyard": false,
+      "extra_doors_requested": 3,
+      "extra_doors_added": 3,
+      "tags": {
+        "free_area_m2": 323.5,
+        "free_components": 1,
+        "loops": 3,
+        "largest_island_m2": 3.98,
+        "narrow_share": 0.2126,
+        "geodesic_diameter_m": 36.3,
+        "free_height_m": 18.4,
+        "free_width_m": 18.1,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "(250, 250) uint8",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "passages >= 0.9 m": "1 region(s) after removing narrow gaps",
+        "free area": "324 m\u00b2",
+        "benchmark loads it": "spawns [[214, 36], [179, 121]], 3 Cost steps, coverage 14.3%"
+      }
+    },
+    {
+      "name": "rooms_v1_seed_21",
+      "file": "rooms_v1_seed_21.pgm",
+      "sha256": "ad392ccbb8ef0704fc01f2ad78b68a940a9f1b40d6e41e721d557867dc74f104",
+      "split": "test",
+      "seed": 21,
+      "rooms": 6,
+      "courtyard": true,
+      "extra_doors_requested": 0,
+      "extra_doors_added": 0,
+      "tags": {
+        "free_area_m2": 178.84,
+        "free_components": 1,
+        "loops": 1,
+        "largest_island_m2": 62.44,
+        "narrow_share": 0.2767,
+        "geodesic_diameter_m": 31.0,
+        "free_height_m": 14.8,
+        "free_width_m": 16.4,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "(250, 250) uint8",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "passages >= 0.9 m": "1 region(s) after removing narrow gaps",
+        "free area": "179 m\u00b2",
+        "benchmark loads it": "spawns [[98, 170], [187, 97]], 3 Cost steps, coverage 20.6%"
+      }
+    },
+    {
+      "name": "rooms_v1_seed_22",
+      "file": "rooms_v1_seed_22.pgm",
+      "sha256": "59d79aecc800b2c869ba6c2f1ada9dd09a5532c4173f51e7bfded7d8bbf174af",
+      "split": "test",
+      "seed": 22,
+      "rooms": 9,
+      "courtyard": true,
+      "extra_doors_requested": 1,
+      "extra_doors_added": 1,
+      "tags": {
+        "free_area_m2": 184.2,
+        "free_components": 1,
+        "loops": 5,
+        "largest_island_m2": 35.88,
+        "narrow_share": 0.2923,
+        "geodesic_diameter_m": 29.7,
+        "free_height_m": 14.6,
+        "free_width_m": 15.3,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "(250, 250) uint8",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "passages >= 0.9 m": "1 region(s) after removing narrow gaps",
+        "free area": "184 m\u00b2",
+        "benchmark loads it": "spawns [[52, 129], [84, 107]], 3 Cost steps, coverage 19.2%"
+      }
+    },
+    {
+      "name": "rooms_v1_seed_23",
+      "file": "rooms_v1_seed_23.pgm",
+      "sha256": "d015141ee4abc715a7761c9eb5a06656b1fb731a28474b72f85a32a0060cdb27",
+      "split": "test",
+      "seed": 23,
+      "rooms": 7,
+      "courtyard": true,
+      "extra_doors_requested": 2,
+      "extra_doors_added": 2,
+      "tags": {
+        "free_area_m2": 220.33,
+        "free_components": 1,
+        "loops": 3,
+        "largest_island_m2": 69.17,
+        "narrow_share": 0.2565,
+        "geodesic_diameter_m": 34.1,
+        "free_height_m": 18.7,
+        "free_width_m": 15.6,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "(250, 250) uint8",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "passages >= 0.9 m": "1 region(s) after removing narrow gaps",
+        "free area": "220 m\u00b2",
+        "benchmark loads it": "spawns [[100, 145], [40, 133]], 3 Cost steps, coverage 17.4%"
+      }
+    },
+    {
+      "name": "rooms_v1_seed_24",
+      "file": "rooms_v1_seed_24.pgm",
+      "sha256": "ef98df5f0e5d38fecc1ade772ced509b6f84cf9e426506160968328855965b4b",
+      "split": "test",
+      "seed": 24,
+      "rooms": 12,
+      "courtyard": true,
+      "extra_doors_requested": 3,
+      "extra_doors_added": 3,
+      "tags": {
+        "free_area_m2": 254.54,
+        "free_components": 1,
+        "loops": 9,
+        "largest_island_m2": 34.76,
+        "narrow_share": 0.2977,
+        "geodesic_diameter_m": 34.3,
+        "free_height_m": 18.3,
+        "free_width_m": 16.2,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "(250, 250) uint8",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "passages >= 0.9 m": "1 region(s) after removing narrow gaps",
+        "free area": "255 m\u00b2",
+        "benchmark loads it": "spawns [[208, 128], [135, 133]], 3 Cost steps, coverage 19.6%"
+      }
+    },
+    {
+      "name": "rooms_v1_seed_25",
+      "file": "rooms_v1_seed_25.pgm",
+      "sha256": "9380e6d9b6c4b57757b9ce135741a7f6a6a343fe8b16bffae93824c7974c4a83",
+      "split": "test",
+      "seed": 25,
+      "rooms": 11,
+      "courtyard": false,
+      "extra_doors_requested": 0,
+      "extra_doors_added": 0,
+      "tags": {
+        "free_area_m2": 290.2,
+        "free_components": 1,
+        "loops": 0,
+        "largest_island_m2": 0.0,
+        "narrow_share": 0.2682,
+        "geodesic_diameter_m": 51.5,
+        "free_height_m": 16.2,
+        "free_width_m": 18.7,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "(250, 250) uint8",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "passages >= 0.9 m": "1 region(s) after removing narrow gaps",
+        "free area": "290 m\u00b2",
+        "benchmark loads it": "spawns [[89, 51], [161, 208]], 3 Cost steps, coverage 20.1%"
+      }
+    },
+    {
+      "name": "rooms_v1_seed_26",
+      "file": "rooms_v1_seed_26.pgm",
+      "sha256": "b4d35df0dc7f5dbd5eca2c36ae9d5472a0cdb775924bb6cba54ed4582b99e96c",
+      "split": "test",
+      "seed": 26,
+      "rooms": 11,
+      "courtyard": false,
+      "extra_doors_requested": 1,
+      "extra_doors_added": 1,
+      "tags": {
+        "free_area_m2": 265.34,
+        "free_components": 1,
+        "loops": 1,
+        "largest_island_m2": 1.16,
+        "narrow_share": 0.2833,
+        "geodesic_diameter_m": 40.1,
+        "free_height_m": 18.5,
+        "free_width_m": 15.0,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "(250, 250) uint8",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "passages >= 0.9 m": "1 region(s) after removing narrow gaps",
+        "free area": "265 m\u00b2",
+        "benchmark loads it": "spawns [[213, 41], [87, 143]], 3 Cost steps, coverage 20.3%"
+      }
+    },
+    {
+      "name": "rooms_v1_seed_27",
+      "file": "rooms_v1_seed_27.pgm",
+      "sha256": "350d28c0650f9e1dba6757974354626b79f9f1993c71d51d4839813be7fa0f0f",
+      "split": "test",
+      "seed": 27,
+      "rooms": 6,
+      "courtyard": false,
+      "extra_doors_requested": 2,
+      "extra_doors_added": 2,
+      "tags": {
+        "free_area_m2": 293.46,
+        "free_components": 1,
+        "loops": 2,
+        "largest_island_m2": 1.04,
+        "narrow_share": 0.1959,
+        "geodesic_diameter_m": 35.2,
+        "free_height_m": 17.9,
+        "free_width_m": 16.8,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "(250, 250) uint8",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "passages >= 0.9 m": "1 region(s) after removing narrow gaps",
+        "free area": "293 m\u00b2",
+        "benchmark loads it": "spawns [[173, 75], [140, 68]], 3 Cost steps, coverage 23.4%"
+      }
+    },
+    {
+      "name": "rooms_v1_seed_28",
+      "file": "rooms_v1_seed_28.pgm",
+      "sha256": "d0e4211431db05acbaf8c2fa1c8d895998f3a0d938d3cb8ffd6431f6d73261e1",
+      "split": "test",
+      "seed": 28,
+      "rooms": 6,
+      "courtyard": false,
+      "extra_doors_requested": 3,
+      "extra_doors_added": 3,
+      "tags": {
+        "free_area_m2": 261.53,
+        "free_components": 1,
+        "loops": 3,
+        "largest_island_m2": 1.98,
+        "narrow_share": 0.2092,
+        "geodesic_diameter_m": 32.8,
+        "free_height_m": 14.5,
+        "free_width_m": 18.5,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "(250, 250) uint8",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "passages >= 0.9 m": "1 region(s) after removing narrow gaps",
+        "free area": "262 m\u00b2",
+        "benchmark loads it": "spawns [[57, 155], [172, 40]], 3 Cost steps, coverage 17.8%"
+      }
+    },
+    {
+      "name": "rooms_v1_seed_29",
+      "file": "rooms_v1_seed_29.pgm",
+      "sha256": "49c709f5cf9ba048a5f2ef2803a7b938acade40310ec4722a24e1be807106d13",
+      "split": "test",
+      "seed": 29,
+      "rooms": 6,
+      "courtyard": true,
+      "extra_doors_requested": 0,
+      "extra_doors_added": 0,
+      "tags": {
+        "free_area_m2": 203.66,
+        "free_components": 1,
+        "loops": 1,
+        "largest_island_m2": 40.28,
+        "narrow_share": 0.2744,
+        "geodesic_diameter_m": 31.9,
+        "free_height_m": 17.3,
+        "free_width_m": 14.2,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "(250, 250) uint8",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "passages >= 0.9 m": "1 region(s) after removing narrow gaps",
+        "free area": "204 m\u00b2",
+        "benchmark loads it": "spawns [[198, 191], [60, 185]], 3 Cost steps, coverage 19.9%"
+      }
+    },
+    {
+      "name": "rooms_v1_seed_30",
+      "file": "rooms_v1_seed_30.pgm",
+      "sha256": "755dbde182efb7b9c45ecb777858f72af5fdc23e8bf0e16daeb810ac5fdf983a",
+      "split": "test",
+      "seed": 30,
+      "rooms": 10,
+      "courtyard": true,
+      "extra_doors_requested": 1,
+      "extra_doors_added": 1,
+      "tags": {
+        "free_area_m2": 265.53,
+        "free_components": 1,
+        "loops": 2,
+        "largest_island_m2": 54.63,
+        "narrow_share": 0.285,
+        "geodesic_diameter_m": 38.3,
+        "free_height_m": 17.2,
+        "free_width_m": 18.9,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "(250, 250) uint8",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "passages >= 0.9 m": "1 region(s) after removing narrow gaps",
+        "free area": "266 m\u00b2",
+        "benchmark loads it": "spawns [[161, 93], [210, 153]], 3 Cost steps, coverage 16.0%"
+      }
+    }
+  ]
+}
