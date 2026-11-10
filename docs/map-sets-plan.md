@@ -34,17 +34,22 @@ that experiments can train and test on, with computed difficulty tags.
 
 ## How tagging works
 
-Tags are computed from the `.pgm` by one function, used for every source and
-also run on the 12 hand-made maps so old and new maps share one scale:
+Tags are computed from the `.pgm` by `tags()` in explore_bench/map_tags.py,
+used for every source and also run on the 12 hand-made maps so old and new
+maps share one scale (`python -m explore_bench.map_tags MAP.pgm ...`):
 
 | Tag | Meaning |
 |---|---|
 | `free_area_m2` | free cells x 0.01 m² |
-| `loops` | wall islands fully surrounded by free space (square_loop = 1) |
+| `free_components` | separate free regions; should be 1 |
+| `loops` | wall islands fully surrounded by free space, any size (square_loop = 1, room_1 = 6) |
+| `largest_island_m2` | area of the biggest island: about 1 m² for a wall stub, 200 m² for square_loop's core |
 | `narrow_share` | share of free cells less than 0.5 m from a wall |
-| `geodesic_diameter_m` | longest shortest path through free space |
-| `extent` | `small` or `full`, from the free-space bounding box (for step 2) |
-| `rooms`, `doors` | when the source records them (generator, HouseExpo `room_num`), else null |
+| `geodesic_diameter_m` | longest 4-connected walk through free space (two-sweep estimate) |
+| `free_height_m`, `free_width_m`, `extent` | free-space bounding box; `small` or `full` (for step 2) |
+
+Room and door counts are not computed from the image; the manifest copies
+them from the source when it records them (generator, HouseExpo `room_num`).
 
 Results such as "Cost steps to 99%" are not tags; they come from baseline
 runs. Analysis joins `episodes.csv` (`map_name`) to the manifest, so results
