@@ -68,7 +68,7 @@ def test_rejected_seeds_are_recorded(tmp_path, monkeypatch):
     monkeypatch.setattr(freeze.rooms, "validate", reject_first)
     run(tmp_path, "--splits", "test=1")
     manifest = json.loads((tmp_path / "unit_v1/manifest.json").read_text())
-    assert manifest["rejected"] == [{"seed": 1, "failed": ["unit rejection"]}]
+    assert [(item["seed"], item["failed"]) for item in manifest["rejected"]] == [(1, ["unit rejection"])]
     assert manifest["maps"][0]["seed"] == 2 and manifest["attempts"] == 2
     assert not (tmp_path / "unit_v1/unit_v1_seed_1.pgm").exists()
 
@@ -89,3 +89,59 @@ def test_rejects_bad_splits():
         freeze.parse_splits(["test=1", "test=2"])
     with pytest.raises(ValueError):
         freeze.parse_splits(["holdout=3"])
+
+
+def test_courtyards_cycle_after_extra_doors(tmp_path):
+    run(tmp_path, "--splits", "test=4", "--extra-doors", "0", "1", "--courtyards", "0", "1")
+    maps = json.loads((tmp_path / "unit_v1/manifest.json").read_text())["maps"]
+    assert [(item["extra_doors_requested"], item["courtyard"]) for item in maps] == [
+        (0, False), (1, False), (0, True), (1, True)]
+    # A courtyard is one large island, unlike loops round a wall piece.
+    assert all(item["tags"]["largest_island_m2"] >= 16 for item in maps if item["courtyard"])
+    assert all(item["tags"]["largest_island_m2"] < 16 for item in maps if not item["courtyard"])
+
+
+def fake_archive(tmp_path, widths=(15, 14, 13)):
+    import io
+    import tarfile
+    path = tmp_path / "json.tar.gz"
+    with tarfile.open(str(path), "w:gz") as archive:
+        for width in widths:
+            data = json.dumps({"id": "house{}".format(width), "room_num": 1,
+                               "verts": [[0, 0], [width, 0], [width, 10], [0, 10]]}).encode()
+            member = tarfile.TarInfo("json/house{}.json".format(width))
+            member.size = len(data)
+            archive.addfile(member, io.BytesIO(data))
+    return path
+
+
+def test_houseexpo_set_commits_only_its_manifest_and_rebuilds(tmp_path, monkeypatch):
+    archive = fake_archive(tmp_path)
+    monkeypatch.setattr(freeze.houseexpo, "ARCHIVE_SHA256", freeze.sha256(archive))
+    root = tmp_path / "sets"
+    assert freeze.main(["--source", "houseexpo", "--name", "hx", "--version", "1", "--root", str(root),
+                        "--allow-dirty", "--smoke-steps", "0", "--archive", str(archive),
+                        "--splits", "test=2"]) == 0
+    directory = root / "hx_v1"
+    manifest = json.loads((directory / "manifest.json").read_text())
+    assert manifest["source"] == "houseexpo" and len(manifest["maps"]) == 2
+    assert all(item["source_id"].startswith("house") for item in manifest["maps"])
+    assert "*.pgm" in (directory / ".gitignore").read_text()
+    # Another machine: no maps until rebuilt, then identical to the manifest.
+    for path in directory.glob("*.pgm"):
+        path.unlink()
+    assert not freeze.check(directory)
+    assert freeze.main(["--rebuild", str(directory), "--archive", str(archive)]) == 0
+    assert freeze.check(directory)
+
+
+def test_rebuild_refuses_a_different_archive(tmp_path, monkeypatch):
+    archive = fake_archive(tmp_path)
+    monkeypatch.setattr(freeze.houseexpo, "ARCHIVE_SHA256", freeze.sha256(archive))
+    root = tmp_path / "sets"
+    freeze.main(["--source", "houseexpo", "--name", "hx", "--version", "1", "--root", str(root),
+                 "--allow-dirty", "--smoke-steps", "0", "--archive", str(archive), "--splits", "test=1"])
+    (tmp_path / "other").mkdir()
+    other = fake_archive(tmp_path / "other", widths=(12,))
+    with pytest.raises(SystemExit, match="pinned"):
+        freeze.main(["--rebuild", str(root / "hx_v1"), "--archive", str(other)])
