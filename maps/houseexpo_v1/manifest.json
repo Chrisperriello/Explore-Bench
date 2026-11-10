@@ -1,0 +1,1794 @@
+{
+  "schema": 1,
+  "name": "houseexpo_v1",
+  "source": "houseexpo",
+  "created_utc": "2026-11-10T21:55:29.348054+00:00",
+  "commit": "27375456e7d17de1ff03f494f18c1841c432cf52",
+  "sources_dirty": false,
+  "parameters": {
+    "seed": 1,
+    "splits": {
+      "test": 30
+    },
+    "smoke_steps": 3,
+    "max_attempts": 400
+  },
+  "generator": {
+    "archive_url": "https://raw.githubusercontent.com/TeaganLi/HouseExpo/45e2b25/HouseExpo/json.tar.gz",
+    "archive_sha256": "dad4a7d230937bdfe1d57c91330e697b625ec681eefd9cda3159082a939b4f2f",
+    "supersample": 10,
+    "area_m2": [
+      100,
+      400
+    ],
+    "clearance_cells": 9
+  },
+  "grid": {
+    "resolution_m": 0.1,
+    "free": 254,
+    "wall": 0,
+    "outside": 205
+  },
+  "attempts": 134,
+  "rejected": [
+    {
+      "source_id": "3d313de374434b0be7f453fba9141439",
+      "rooms": 5,
+      "spawn_check_seed": 482170633,
+      "failed": [
+        "clearance filter"
+      ]
+    },
+    {
+      "source_id": "1c54af57c6646a1a02b0cce120f4a9f8",
+      "failed": [
+        "layout extent 30.13 x 18.44 m does not fit at 0.1 m/cell"
+      ]
+    },
+    {
+      "source_id": "7652ec1c1a022cb31952362fc6e7f9aa",
+      "rooms": 4,
+      "spawn_check_seed": 2452895290,
+      "failed": [
+        "clearance filter",
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "354b5ceb5c0a4f5d75fbc8b24865a48e",
+      "rooms": 3,
+      "spawn_check_seed": 2631003116,
+      "failed": [
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "ebaaa28f5300e57da6c30bea2f546349",
+      "rooms": 9,
+      "spawn_check_seed": 1169711701,
+      "failed": [
+        "clearance filter"
+      ]
+    },
+    {
+      "source_id": "dffd9330234df119a73fcaa62734e231",
+      "rooms": 8,
+      "spawn_check_seed": 2157410917,
+      "failed": [
+        "clearance filter"
+      ]
+    },
+    {
+      "source_id": "b2177df6c657a0df0f156c46d2994949",
+      "rooms": 8,
+      "spawn_check_seed": 3323499802,
+      "failed": [
+        "clearance filter",
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "e7ca9ce8270356aac295a8d0868cee93",
+      "rooms": 6,
+      "spawn_check_seed": 3602302236,
+      "failed": [
+        "clearance filter",
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "0c7ed9b15204173a493ce77f150a398f",
+      "rooms": 2,
+      "spawn_check_seed": 1827052385,
+      "failed": [
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "cc72c3ca6ce7c861fa16862db0a0965a",
+      "rooms": 6,
+      "spawn_check_seed": 101373792,
+      "failed": [
+        "clearance filter",
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "d28e0b99236e2604deadbb1e8ad0088f",
+      "rooms": 5,
+      "spawn_check_seed": 3602024755,
+      "failed": [
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "69f3ea4efe1c2bf49d5832614dc3dd01",
+      "rooms": 5,
+      "spawn_check_seed": 2787846357,
+      "failed": [
+        "clearance filter",
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "2e1a0526ae7b4b533999a66577826fc4",
+      "failed": [
+        "layout extent 26.88 x 14.73 m does not fit at 0.1 m/cell"
+      ]
+    },
+    {
+      "source_id": "94296dc7e748b5c03894f2e22f6e9fac",
+      "rooms": 2,
+      "spawn_check_seed": 3315559185,
+      "failed": [
+        "clearance filter",
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "0d8cf77605e27d0e3aec043568410f40",
+      "rooms": 8,
+      "spawn_check_seed": 1656665468,
+      "failed": [
+        "clearance filter"
+      ]
+    },
+    {
+      "source_id": "09d741a9a62d369bd9932d35279d8a81",
+      "rooms": 7,
+      "spawn_check_seed": 1992668914,
+      "failed": [
+        "clearance filter",
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "0b19de10f5489650662da0849a3e3131",
+      "rooms": 12,
+      "spawn_check_seed": 516795357,
+      "failed": [
+        "clearance filter",
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "040890e66dd66491550c43a9dc371802",
+      "rooms": 4,
+      "spawn_check_seed": 3736466575,
+      "failed": [
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "b2e90718b403981ec19e85c24826892f",
+      "rooms": 7,
+      "spawn_check_seed": 21489783,
+      "failed": [
+        "clearance filter"
+      ]
+    },
+    {
+      "source_id": "640a486b710e11fe978889ff6463872b",
+      "rooms": 0,
+      "spawn_check_seed": 3698096105,
+      "failed": [
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "c6d64bbe192419a13071ed73c9cb6ad2",
+      "rooms": 5,
+      "spawn_check_seed": 3650995031,
+      "failed": [
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "0cbc8a5b1e670303f8c8e2130bea9c8a",
+      "rooms": 8,
+      "spawn_check_seed": 2308304103,
+      "failed": [
+        "clearance filter",
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "fbe54b29afe8b745be48b61232bf3b44",
+      "rooms": 9,
+      "spawn_check_seed": 1276965182,
+      "failed": [
+        "clearance filter"
+      ]
+    },
+    {
+      "source_id": "667dcbfc2224156be51c99dc4ecc9a6e",
+      "rooms": 3,
+      "spawn_check_seed": 401361090,
+      "failed": [
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "6beaa502272e3e044b321522b8314f49",
+      "rooms": 7,
+      "spawn_check_seed": 1188144014,
+      "failed": [
+        "clearance filter"
+      ]
+    },
+    {
+      "source_id": "a17b8e241bc3ff83f25af7fb52da6e5b",
+      "rooms": 2,
+      "spawn_check_seed": 707511071,
+      "failed": [
+        "clearance filter",
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "6afe1e6ef6ba9c82d3422dedafc4c4dd",
+      "rooms": 2,
+      "spawn_check_seed": 1653108057,
+      "failed": [
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "651aa9a6a45707d7324ccfeadcf57bc0",
+      "rooms": 12,
+      "spawn_check_seed": 749679257,
+      "failed": [
+        "clearance filter"
+      ]
+    },
+    {
+      "source_id": "d9e7c1893d339233f80ca92e9dcce3ed",
+      "rooms": 5,
+      "spawn_check_seed": 678924256,
+      "failed": [
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "8717254cb46a48cbceadb7137192062a",
+      "rooms": 0,
+      "spawn_check_seed": 1209401697,
+      "failed": [
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "0986566ae94c66f04b752740722e72d0",
+      "rooms": 4,
+      "spawn_check_seed": 3579111762,
+      "failed": [
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "c3ee5a23fcab1a84c9a7ba18449a8d97",
+      "rooms": 6,
+      "spawn_check_seed": 4285905350,
+      "failed": [
+        "clearance filter"
+      ]
+    },
+    {
+      "source_id": "2cddf93d03c64d8214f57114dcf5839d",
+      "failed": [
+        "layout extent 29.02 x 25.25 m does not fit at 0.1 m/cell"
+      ]
+    },
+    {
+      "source_id": "5550e6c6e54b90575dc700a71f2fe855",
+      "rooms": 4,
+      "spawn_check_seed": 3596195059,
+      "failed": [
+        "clearance filter",
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "8a0e9fa07b34a7fac4c2068a1c5c5b14",
+      "rooms": 18,
+      "spawn_check_seed": 98552986,
+      "failed": [
+        "clearance filter"
+      ]
+    },
+    {
+      "source_id": "36dc91365e1163028117993fe2bfc025",
+      "rooms": 7,
+      "spawn_check_seed": 326568852,
+      "failed": [
+        "clearance filter",
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "f1e12bbad62312654a3be334e9b1036f",
+      "rooms": 6,
+      "spawn_check_seed": 3113421506,
+      "failed": [
+        "clearance filter",
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "575860a91afaba3172c0af3967470a24",
+      "rooms": 9,
+      "spawn_check_seed": 301172391,
+      "failed": [
+        "clearance filter"
+      ]
+    },
+    {
+      "source_id": "8d5ae8a7b3c7fe1ccead437b9fea4e25",
+      "rooms": 9,
+      "spawn_check_seed": 3507297808,
+      "failed": [
+        "clearance filter",
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "84600a700f50ad0d244f1f3433b31989",
+      "rooms": 5,
+      "spawn_check_seed": 2897912388,
+      "failed": [
+        "clearance filter",
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "f0d0bda47b93e4b35e3e4567eb08cf0d",
+      "rooms": 4,
+      "spawn_check_seed": 4153829450,
+      "failed": [
+        "clearance filter",
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "0f2ff656ecce45ef162c0838b434ea7f",
+      "rooms": 5,
+      "spawn_check_seed": 1779294362,
+      "failed": [
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "e3f4ebf513141d864ec27ed4c6b2c636",
+      "rooms": 4,
+      "spawn_check_seed": 3121613076,
+      "failed": [
+        "clearance filter",
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "be70d9dfdc32dd032333394aac9fa9c3",
+      "rooms": 3,
+      "spawn_check_seed": 424073554,
+      "failed": [
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "c322eb897552a381b73db68f03fc235b",
+      "rooms": 8,
+      "spawn_check_seed": 554507362,
+      "failed": [
+        "clearance filter"
+      ]
+    },
+    {
+      "source_id": "ac01e32765df9cedd381a9b77e9c00f1",
+      "rooms": 5,
+      "spawn_check_seed": 1961458236,
+      "failed": [
+        "clearance filter",
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "26f9bcae704baa1e1f5e9a9da18bae20",
+      "rooms": 10,
+      "spawn_check_seed": 399914855,
+      "failed": [
+        "clearance filter"
+      ]
+    },
+    {
+      "source_id": "cf852036e845665e72868c9eac1ac254",
+      "rooms": 5,
+      "spawn_check_seed": 1033846684,
+      "failed": [
+        "clearance filter",
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "f23db8c4b6ac4ff35bf33528a5e92481",
+      "rooms": 6,
+      "spawn_check_seed": 3812348634,
+      "failed": [
+        "clearance filter"
+      ]
+    },
+    {
+      "source_id": "4a97bf905bcac3bc72df197aaef3fcb0",
+      "rooms": 11,
+      "spawn_check_seed": 2197322457,
+      "failed": [
+        "clearance filter"
+      ]
+    },
+    {
+      "source_id": "f883e7550e3cd59d5926ecf50b5ae047",
+      "rooms": 9,
+      "spawn_check_seed": 1699489,
+      "failed": [
+        "clearance filter"
+      ]
+    },
+    {
+      "source_id": "b8e3c758cf97d170766e1a1f7832e3a6",
+      "rooms": 6,
+      "spawn_check_seed": 2513242077,
+      "failed": [
+        "clearance filter"
+      ]
+    },
+    {
+      "source_id": "ada937f7049bbfbb82ad9cd94c9844c1",
+      "rooms": 7,
+      "spawn_check_seed": 2218543859,
+      "failed": [
+        "clearance filter"
+      ]
+    },
+    {
+      "source_id": "e8c4594f9dc2e0e2ee2166a53293c26d",
+      "rooms": 5,
+      "spawn_check_seed": 469731744,
+      "failed": [
+        "clearance filter"
+      ]
+    },
+    {
+      "source_id": "dea668170e8d6a7b4e55e3b694cd2437",
+      "rooms": 5,
+      "spawn_check_seed": 1099409516,
+      "failed": [
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "1380c7b43aebdebc178089240946e2b2",
+      "rooms": 5,
+      "spawn_check_seed": 1181162809,
+      "failed": [
+        "clearance filter",
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "b916c101250391b7b2b566616a76f7c7",
+      "rooms": 2,
+      "spawn_check_seed": 1434110536,
+      "failed": [
+        "clearance filter",
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "4df99792f9479d22e5ef328e0aaa0c6d",
+      "failed": [
+        "layout extent 16.45 x 28.80 m does not fit at 0.1 m/cell"
+      ]
+    },
+    {
+      "source_id": "4d183b63828a7655b2fdf8387ad26716",
+      "rooms": 15,
+      "spawn_check_seed": 673004536,
+      "failed": [
+        "clearance filter"
+      ]
+    },
+    {
+      "source_id": "ef263ee322ab0c5c327889d1d5e74f48",
+      "rooms": 10,
+      "spawn_check_seed": 3967019016,
+      "failed": [
+        "clearance filter",
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "690ec86d9add611f7bc15e3cf1533b17",
+      "rooms": 7,
+      "spawn_check_seed": 2499450491,
+      "failed": [
+        "clearance filter",
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "056a04c01247a04f260e7d3c1261dc36",
+      "rooms": 10,
+      "spawn_check_seed": 1221103871,
+      "failed": [
+        "clearance filter"
+      ]
+    },
+    {
+      "source_id": "6b922ab67dbfa2bf3b02986cba88adb8",
+      "rooms": 9,
+      "spawn_check_seed": 159117709,
+      "failed": [
+        "clearance filter"
+      ]
+    },
+    {
+      "source_id": "be83280b8b78c28ad81e51eace5eaf23",
+      "rooms": 11,
+      "spawn_check_seed": 261223993,
+      "failed": [
+        "clearance filter",
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "f509bc4ae764f98120beaf1f0c7d591e",
+      "rooms": 6,
+      "spawn_check_seed": 3403065636,
+      "failed": [
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "a0953e0223d4def8495b56dbe04030e6",
+      "rooms": 18,
+      "spawn_check_seed": 33532470,
+      "failed": [
+        "clearance filter"
+      ]
+    },
+    {
+      "source_id": "d9a54dc2aa37a732708973c3bc9fd51c",
+      "rooms": 5,
+      "spawn_check_seed": 4168796979,
+      "failed": [
+        "clearance filter"
+      ]
+    },
+    {
+      "source_id": "7d332304bd8b898e6fb36cd6c3287861",
+      "rooms": 13,
+      "spawn_check_seed": 3387422566,
+      "failed": [
+        "clearance filter"
+      ]
+    },
+    {
+      "source_id": "027e20c6a0d645eb0cde4c71e50ccc98",
+      "rooms": 7,
+      "spawn_check_seed": 3591677218,
+      "failed": [
+        "clearance filter",
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "b409afc2703f396ffdcf772216359eab",
+      "rooms": 8,
+      "spawn_check_seed": 3598492916,
+      "failed": [
+        "clearance filter",
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "f43a02faa2cc95bc3fbc6732f2f7e8df",
+      "rooms": 6,
+      "spawn_check_seed": 529077403,
+      "failed": [
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "3ab564a956fc8cf8744c66b22a84f6d4",
+      "rooms": 5,
+      "spawn_check_seed": 351673340,
+      "failed": [
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "f782779d3f017e28d9f41a77fe43b269",
+      "rooms": 14,
+      "spawn_check_seed": 2346836520,
+      "failed": [
+        "clearance filter"
+      ]
+    },
+    {
+      "source_id": "5ec5cbdafc00ed42e3e557d7bf695e87",
+      "failed": [
+        "layout extent 31.75 x 13.57 m does not fit at 0.1 m/cell"
+      ]
+    },
+    {
+      "source_id": "c90a9e9ff0adc490c287d97d2c504b15",
+      "rooms": 3,
+      "spawn_check_seed": 3972162062,
+      "failed": [
+        "clearance filter",
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "1941ee0b9148113f672493ce081de4cc",
+      "rooms": 8,
+      "spawn_check_seed": 597006538,
+      "failed": [
+        "clearance filter"
+      ]
+    },
+    {
+      "source_id": "e472fffb9f637a5326fd8c24fe7143ab",
+      "rooms": 3,
+      "spawn_check_seed": 1090237905,
+      "failed": [
+        "clearance filter"
+      ]
+    },
+    {
+      "source_id": "aaeee8e061eeb6d177da8cbbf3cbe687",
+      "failed": [
+        "layout extent 29.86 x 19.00 m does not fit at 0.1 m/cell"
+      ]
+    },
+    {
+      "source_id": "5c0dc1256e4c9d8727967404d4086c8d",
+      "rooms": 26,
+      "spawn_check_seed": 1183387842,
+      "failed": [
+        "clearance filter"
+      ]
+    },
+    {
+      "source_id": "c2b97807ad542567ea240c424a6a27ea",
+      "rooms": 8,
+      "spawn_check_seed": 125661658,
+      "failed": [
+        "clearance filter",
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "e632384cfd3b11e74d02c9c351af3408",
+      "rooms": 11,
+      "spawn_check_seed": 2444601996,
+      "failed": [
+        "clearance filter"
+      ]
+    },
+    {
+      "source_id": "a6ff71e403ac16e7d9a57421d7ac70eb",
+      "rooms": 9,
+      "spawn_check_seed": 2216774554,
+      "failed": [
+        "clearance filter"
+      ]
+    },
+    {
+      "source_id": "00a5c4e3a6327162b34c4c7c980cdb24",
+      "rooms": 2,
+      "spawn_check_seed": 3029244287,
+      "failed": [
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "9abcaa3c0004aee0b8d440031ca192ee",
+      "rooms": 2,
+      "spawn_check_seed": 4068122755,
+      "failed": [
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "d91330a714a241b8605840e4d91b5f80",
+      "rooms": 5,
+      "spawn_check_seed": 1575450577,
+      "failed": [
+        "clearance filter",
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "6a6e0dd2a3727ed2d42eb8b252ec781f",
+      "rooms": 5,
+      "spawn_check_seed": 1101841608,
+      "failed": [
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "515bde8762a70fd932b05901cf6e4cff",
+      "rooms": 10,
+      "spawn_check_seed": 2587871616,
+      "failed": [
+        "clearance filter",
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "52f484cb426723758abde271d6a49a4f",
+      "rooms": 6,
+      "spawn_check_seed": 1653528060,
+      "failed": [
+        "clearance filter",
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "2953a15d5db078b0b0ac265a4b9a8d78",
+      "failed": [
+        "layout extent 66.25 x 14.37 m does not fit at 0.1 m/cell"
+      ]
+    },
+    {
+      "source_id": "7661bf0094f673f55afd9273d50be8be",
+      "rooms": 4,
+      "spawn_check_seed": 1607635841,
+      "failed": [
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "0e65f2af4af6ad9714e4d21d7b7e5de3",
+      "rooms": 8,
+      "spawn_check_seed": 2495370517,
+      "failed": [
+        "clearance filter"
+      ]
+    },
+    {
+      "source_id": "1fa390f1a6c65faccffcd43e530031e0",
+      "rooms": 4,
+      "spawn_check_seed": 4187933591,
+      "failed": [
+        "clearance filter",
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "2593aef145a1f6c9b01e8511c961cad2",
+      "rooms": 1,
+      "spawn_check_seed": 2377494980,
+      "failed": [
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "07496a4349d181011cd740b9e7a5874f",
+      "rooms": 5,
+      "spawn_check_seed": 1125700712,
+      "failed": [
+        "clearance filter",
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "d69cd9102645728eff5af7b4473e2e6a",
+      "rooms": 8,
+      "spawn_check_seed": 1276347388,
+      "failed": [
+        "clearance filter",
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "06798e87b1838acf228a42582b008728",
+      "rooms": 3,
+      "spawn_check_seed": 1610281322,
+      "failed": [
+        "clearance filter",
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "830f57ca24f6e4797682dd36c88610a5",
+      "rooms": 14,
+      "spawn_check_seed": 1014002947,
+      "failed": [
+        "clearance filter"
+      ]
+    },
+    {
+      "source_id": "7cda33d989cd4ab85834e3a31eab197d",
+      "rooms": 7,
+      "spawn_check_seed": 2580804203,
+      "failed": [
+        "clearance filter"
+      ]
+    },
+    {
+      "source_id": "54bf1ee33f2ac9b9bbddd6dd9c945729",
+      "rooms": 6,
+      "spawn_check_seed": 33830121,
+      "failed": [
+        "clearance filter",
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "a0da300551521fa3d06d8e15a299ad1b",
+      "rooms": 4,
+      "spawn_check_seed": 1076481532,
+      "failed": [
+        "clearance filter",
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "875d052162060a3e6fbe1ed9bf91354b",
+      "rooms": 6,
+      "spawn_check_seed": 3698783693,
+      "failed": [
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "1f3cad78aaefe5d98f377935c9887b28",
+      "failed": [
+        "layout extent 30.21 x 17.59 m does not fit at 0.1 m/cell"
+      ]
+    },
+    {
+      "source_id": "48b2676e152cb848b5c6aef40c031e9a",
+      "rooms": 7,
+      "spawn_check_seed": 1032371862,
+      "failed": [
+        "area filter"
+      ]
+    },
+    {
+      "source_id": "4cd774a626de85cf3a7b2d8103a772b6",
+      "rooms": 1,
+      "spawn_check_seed": 2272735165,
+      "failed": [
+        "area filter"
+      ]
+    }
+  ],
+  "splits": {
+    "test": [
+      "maps/houseexpo_v1/houseexpo_v1_d4dfdcf4279017dd06ecca64bad3e096.pgm",
+      "maps/houseexpo_v1/houseexpo_v1_60ee6f4e6f0f1dc6ef59fadd4de63c9a.pgm",
+      "maps/houseexpo_v1/houseexpo_v1_2a403446d683517a3751a64af1138b57.pgm",
+      "maps/houseexpo_v1/houseexpo_v1_b713f34d4babd22ae98ca2da1f06a459.pgm",
+      "maps/houseexpo_v1/houseexpo_v1_00d9ae13d709e04cf29863b2a481a9d0.pgm",
+      "maps/houseexpo_v1/houseexpo_v1_7bc142b960740d040fe99c8b24c07e0e.pgm",
+      "maps/houseexpo_v1/houseexpo_v1_cef1bef0da0383bd634edbffdaed974d.pgm",
+      "maps/houseexpo_v1/houseexpo_v1_ebdca8ed3144978ef976aa8da9ad0810.pgm",
+      "maps/houseexpo_v1/houseexpo_v1_9b617c3479d7b48c9f6270ec81b965c2.pgm",
+      "maps/houseexpo_v1/houseexpo_v1_ee73f3d2b905d735f204210593b31672.pgm",
+      "maps/houseexpo_v1/houseexpo_v1_edba31972a5dbf856ef847e48e77271f.pgm",
+      "maps/houseexpo_v1/houseexpo_v1_b8ef6e1dec644e394ad6f39d7388d0de.pgm",
+      "maps/houseexpo_v1/houseexpo_v1_70699b6390b4596d1761c5118705a210.pgm",
+      "maps/houseexpo_v1/houseexpo_v1_4f663dd737422511afe32bc720f7822e.pgm",
+      "maps/houseexpo_v1/houseexpo_v1_afb1e102188cc581e328606be6ea52c6.pgm",
+      "maps/houseexpo_v1/houseexpo_v1_30d2733effedbeba2f0b9d034331c052.pgm",
+      "maps/houseexpo_v1/houseexpo_v1_0d0c2cd68828c9d96295fe2f129c2aeb.pgm",
+      "maps/houseexpo_v1/houseexpo_v1_8fbcc78144a7e13acf01ad9baa20b77e.pgm",
+      "maps/houseexpo_v1/houseexpo_v1_5bdc4b26c95d62dcbd5dd8537e003575.pgm",
+      "maps/houseexpo_v1/houseexpo_v1_a5561bf9f4f48e1500f95b65bda24442.pgm",
+      "maps/houseexpo_v1/houseexpo_v1_f09477f2203503f08f3be3d933d1229a.pgm",
+      "maps/houseexpo_v1/houseexpo_v1_c32d9ae8b16b95ca5d2654d22697cf6f.pgm",
+      "maps/houseexpo_v1/houseexpo_v1_a1b03bd8c57c2bfb758d695eae1ab8f3.pgm",
+      "maps/houseexpo_v1/houseexpo_v1_0c4a4b62871d0bacffd05bc1c5d2027d.pgm",
+      "maps/houseexpo_v1/houseexpo_v1_73c5cb70fce8cc9751b8ba9537610974.pgm",
+      "maps/houseexpo_v1/houseexpo_v1_3186ab91953afa8961c35f4c6df49485.pgm",
+      "maps/houseexpo_v1/houseexpo_v1_4c6f4bc3ad47b5ed3ddb89cde7fc8277.pgm",
+      "maps/houseexpo_v1/houseexpo_v1_765c66b51cd9abd98e4072fb3408f0df.pgm",
+      "maps/houseexpo_v1/houseexpo_v1_fbbe8c40ccd86e3fc4390872a6f82355.pgm",
+      "maps/houseexpo_v1/houseexpo_v1_7ed80142ac339a04408d2167b9be2beb.pgm"
+    ]
+  },
+  "maps": [
+    {
+      "name": "houseexpo_v1_d4dfdcf4279017dd06ecca64bad3e096",
+      "file": "houseexpo_v1_d4dfdcf4279017dd06ecca64bad3e096.pgm",
+      "sha256": "3c2a697b67f61665308a7f18e282f38f56933e63728002e14be8c47267642cbb",
+      "split": "test",
+      "source_id": "d4dfdcf4279017dd06ecca64bad3e096",
+      "rooms": 6,
+      "spawn_check_seed": 2622297895,
+      "tags": {
+        "free_area_m2": 101.11,
+        "free_components": 1,
+        "loops": 0,
+        "largest_island_m2": 0.0,
+        "narrow_share": 0.3767,
+        "geodesic_diameter_m": 23.8,
+        "free_height_m": 11.5,
+        "free_width_m": 13.7,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "250x250 uint8; values 0/205/254",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "clearance filter": "1 region(s) after 9x9-square erosion (0.9 m footprint)",
+        "area filter": "101.1 m\u00b2; selected range 100-400 m\u00b2",
+        "benchmark loader": "two robot starts [[143, 137], [171, 71]]",
+        "Cost smoke run": "3 steps; 40.2% coverage (compatibility only)"
+      }
+    },
+    {
+      "name": "houseexpo_v1_60ee6f4e6f0f1dc6ef59fadd4de63c9a",
+      "file": "houseexpo_v1_60ee6f4e6f0f1dc6ef59fadd4de63c9a.pgm",
+      "sha256": "e9d0635fa5e079325e81c5623086fc0c621f09767117eb8358b22613f2e9ef80",
+      "split": "test",
+      "source_id": "60ee6f4e6f0f1dc6ef59fadd4de63c9a",
+      "rooms": 6,
+      "spawn_check_seed": 1673878846,
+      "tags": {
+        "free_area_m2": 153.68,
+        "free_components": 1,
+        "loops": 0,
+        "largest_island_m2": 0.0,
+        "narrow_share": 0.3061,
+        "geodesic_diameter_m": 28.6,
+        "free_height_m": 11.8,
+        "free_width_m": 18.8,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "250x250 uint8; values 0/205/254",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "clearance filter": "1 region(s) after 9x9-square erosion (0.9 m footprint)",
+        "area filter": "153.7 m\u00b2; selected range 100-400 m\u00b2",
+        "benchmark loader": "two robot starts [[69, 189], [155, 122]]",
+        "Cost smoke run": "3 steps; 33.3% coverage (compatibility only)"
+      }
+    },
+    {
+      "name": "houseexpo_v1_2a403446d683517a3751a64af1138b57",
+      "file": "houseexpo_v1_2a403446d683517a3751a64af1138b57.pgm",
+      "sha256": "e0881ae01dde8e8b2a1d681709006bae4c9bd6d35e30bc95c49351dba988d0cc",
+      "split": "test",
+      "source_id": "2a403446d683517a3751a64af1138b57",
+      "rooms": 8,
+      "spawn_check_seed": 2332186824,
+      "tags": {
+        "free_area_m2": 168.28,
+        "free_components": 1,
+        "loops": 0,
+        "largest_island_m2": 0.0,
+        "narrow_share": 0.1559,
+        "geodesic_diameter_m": 25.8,
+        "free_height_m": 15.2,
+        "free_width_m": 13.9,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "250x250 uint8; values 0/205/254",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "clearance filter": "1 region(s) after 9x9-square erosion (0.9 m footprint)",
+        "area filter": "168.3 m\u00b2; selected range 100-400 m\u00b2",
+        "benchmark loader": "two robot starts [[186, 95], [144, 180]]",
+        "Cost smoke run": "3 steps; 34.6% coverage (compatibility only)"
+      }
+    },
+    {
+      "name": "houseexpo_v1_b713f34d4babd22ae98ca2da1f06a459",
+      "file": "houseexpo_v1_b713f34d4babd22ae98ca2da1f06a459.pgm",
+      "sha256": "94ca1cda0a30371a4f74585f5c66b32cd11b11605147cda5f3aaf56459c2d463",
+      "split": "test",
+      "source_id": "b713f34d4babd22ae98ca2da1f06a459",
+      "rooms": 3,
+      "spawn_check_seed": 3770118235,
+      "tags": {
+        "free_area_m2": 118.42,
+        "free_components": 1,
+        "loops": 0,
+        "largest_island_m2": 0.0,
+        "narrow_share": 0.2174,
+        "geodesic_diameter_m": 24.6,
+        "free_height_m": 10.8,
+        "free_width_m": 14.0,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "250x250 uint8; values 0/205/254",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "clearance filter": "1 region(s) after 9x9-square erosion (0.9 m footprint)",
+        "area filter": "118.4 m\u00b2; selected range 100-400 m\u00b2",
+        "benchmark loader": "two robot starts [[132, 187], [160, 71]]",
+        "Cost smoke run": "3 steps; 49.4% coverage (compatibility only)"
+      }
+    },
+    {
+      "name": "houseexpo_v1_00d9ae13d709e04cf29863b2a481a9d0",
+      "file": "houseexpo_v1_00d9ae13d709e04cf29863b2a481a9d0.pgm",
+      "sha256": "00e58ff0348c2854fd2a14a5a2814dd98b5d43f28eca2eda0bf3bd9237ac6063",
+      "split": "test",
+      "source_id": "00d9ae13d709e04cf29863b2a481a9d0",
+      "rooms": 6,
+      "spawn_check_seed": 2611833764,
+      "tags": {
+        "free_area_m2": 126.99,
+        "free_components": 1,
+        "loops": 0,
+        "largest_island_m2": 0.0,
+        "narrow_share": 0.2655,
+        "geodesic_diameter_m": 26.9,
+        "free_height_m": 10.0,
+        "free_width_m": 13.1,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "250x250 uint8; values 0/205/254",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "clearance filter": "1 region(s) after 9x9-square erosion (0.9 m footprint)",
+        "area filter": "127.0 m\u00b2; selected range 100-400 m\u00b2",
+        "benchmark loader": "two robot starts [[138, 149], [171, 136]]",
+        "Cost smoke run": "3 steps; 31.3% coverage (compatibility only)"
+      }
+    },
+    {
+      "name": "houseexpo_v1_7bc142b960740d040fe99c8b24c07e0e",
+      "file": "houseexpo_v1_7bc142b960740d040fe99c8b24c07e0e.pgm",
+      "sha256": "5c4f58c75e02c18314be9e8f2326eb247e48079f0f835f714a506270f624fec7",
+      "split": "test",
+      "source_id": "7bc142b960740d040fe99c8b24c07e0e",
+      "rooms": 6,
+      "spawn_check_seed": 2019908773,
+      "tags": {
+        "free_area_m2": 101.14,
+        "free_components": 1,
+        "loops": 0,
+        "largest_island_m2": 0.0,
+        "narrow_share": 0.3003,
+        "geodesic_diameter_m": 24.5,
+        "free_height_m": 9.0,
+        "free_width_m": 13.5,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "250x250 uint8; values 0/205/254",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "clearance filter": "1 region(s) after 9x9-square erosion (0.9 m footprint)",
+        "area filter": "101.1 m\u00b2; selected range 100-400 m\u00b2",
+        "benchmark loader": "two robot starts [[82, 132], [117, 129]]",
+        "Cost smoke run": "3 steps; 41.0% coverage (compatibility only)"
+      }
+    },
+    {
+      "name": "houseexpo_v1_cef1bef0da0383bd634edbffdaed974d",
+      "file": "houseexpo_v1_cef1bef0da0383bd634edbffdaed974d.pgm",
+      "sha256": "92bd050b4ebdcb019bba01336e6ed66622eeef31767642029e3a3a97a3afcf77",
+      "split": "test",
+      "source_id": "cef1bef0da0383bd634edbffdaed974d",
+      "rooms": 6,
+      "spawn_check_seed": 731808120,
+      "tags": {
+        "free_area_m2": 125.26,
+        "free_components": 1,
+        "loops": 0,
+        "largest_island_m2": 0.0,
+        "narrow_share": 0.3227,
+        "geodesic_diameter_m": 27.1,
+        "free_height_m": 14.5,
+        "free_width_m": 11.4,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "250x250 uint8; values 0/205/254",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "clearance filter": "1 region(s) after 9x9-square erosion (0.9 m footprint)",
+        "area filter": "125.3 m\u00b2; selected range 100-400 m\u00b2",
+        "benchmark loader": "two robot starts [[87, 128], [127, 97]]",
+        "Cost smoke run": "3 steps; 33.1% coverage (compatibility only)"
+      }
+    },
+    {
+      "name": "houseexpo_v1_ebdca8ed3144978ef976aa8da9ad0810",
+      "file": "houseexpo_v1_ebdca8ed3144978ef976aa8da9ad0810.pgm",
+      "sha256": "2c389670c856de6a964210f23930b431f668bb9ed7f39864b5bb7fdcabc5ddb5",
+      "split": "test",
+      "source_id": "ebdca8ed3144978ef976aa8da9ad0810",
+      "rooms": 4,
+      "spawn_check_seed": 10108013,
+      "tags": {
+        "free_area_m2": 173.07,
+        "free_components": 1,
+        "loops": 0,
+        "largest_island_m2": 0.0,
+        "narrow_share": 0.2185,
+        "geodesic_diameter_m": 34.4,
+        "free_height_m": 16.4,
+        "free_width_m": 18.3,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "250x250 uint8; values 0/205/254",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "clearance filter": "1 region(s) after 9x9-square erosion (0.9 m footprint)",
+        "area filter": "173.1 m\u00b2; selected range 100-400 m\u00b2",
+        "benchmark loader": "two robot starts [[88, 72], [127, 117]]",
+        "Cost smoke run": "3 steps; 35.1% coverage (compatibility only)"
+      }
+    },
+    {
+      "name": "houseexpo_v1_9b617c3479d7b48c9f6270ec81b965c2",
+      "file": "houseexpo_v1_9b617c3479d7b48c9f6270ec81b965c2.pgm",
+      "sha256": "5fdb02c8e31f427a7bf67c9e825f4ae14f72fa55141ee51b7970fb004f75ed4b",
+      "split": "test",
+      "source_id": "9b617c3479d7b48c9f6270ec81b965c2",
+      "rooms": 10,
+      "spawn_check_seed": 3812862817,
+      "tags": {
+        "free_area_m2": 232.43,
+        "free_components": 1,
+        "loops": 0,
+        "largest_island_m2": 0.0,
+        "narrow_share": 0.1022,
+        "geodesic_diameter_m": 30.2,
+        "free_height_m": 15.6,
+        "free_width_m": 14.9,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "250x250 uint8; values 0/205/254",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "clearance filter": "1 region(s) after 9x9-square erosion (0.9 m footprint)",
+        "area filter": "232.4 m\u00b2; selected range 100-400 m\u00b2",
+        "benchmark loader": "two robot starts [[140, 152], [171, 88]]",
+        "Cost smoke run": "3 steps; 40.7% coverage (compatibility only)"
+      }
+    },
+    {
+      "name": "houseexpo_v1_ee73f3d2b905d735f204210593b31672",
+      "file": "houseexpo_v1_ee73f3d2b905d735f204210593b31672.pgm",
+      "sha256": "a22dd4a027da3676faae65e9415be2aa0b2d7f3e90968838bbc9e73b92907f7e",
+      "split": "test",
+      "source_id": "ee73f3d2b905d735f204210593b31672",
+      "rooms": 4,
+      "spawn_check_seed": 1845180961,
+      "tags": {
+        "free_area_m2": 126.0,
+        "free_components": 1,
+        "loops": 0,
+        "largest_island_m2": 0.0,
+        "narrow_share": 0.2014,
+        "geodesic_diameter_m": 24.6,
+        "free_height_m": 14.8,
+        "free_width_m": 10.0,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "250x250 uint8; values 0/205/254",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "clearance filter": "1 region(s) after 9x9-square erosion (0.9 m footprint)",
+        "area filter": "126.0 m\u00b2; selected range 100-400 m\u00b2",
+        "benchmark loader": "two robot starts [[84, 153], [71, 118]]",
+        "Cost smoke run": "3 steps; 26.4% coverage (compatibility only)"
+      }
+    },
+    {
+      "name": "houseexpo_v1_edba31972a5dbf856ef847e48e77271f",
+      "file": "houseexpo_v1_edba31972a5dbf856ef847e48e77271f.pgm",
+      "sha256": "e74f83033632776224a29ec6a623debab8e3cc5b83bbdfb13eb3db1013f76537",
+      "split": "test",
+      "source_id": "edba31972a5dbf856ef847e48e77271f",
+      "rooms": 4,
+      "spawn_check_seed": 1231992182,
+      "tags": {
+        "free_area_m2": 339.01,
+        "free_components": 1,
+        "loops": 0,
+        "largest_island_m2": 0.0,
+        "narrow_share": 0.114,
+        "geodesic_diameter_m": 40.0,
+        "free_height_m": 16.7,
+        "free_width_m": 23.6,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "250x250 uint8; values 0/205/254",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "clearance filter": "1 region(s) after 9x9-square erosion (0.9 m footprint)",
+        "area filter": "339.0 m\u00b2; selected range 100-400 m\u00b2",
+        "benchmark loader": "two robot starts [[204, 202], [141, 214]]",
+        "Cost smoke run": "3 steps; 20.3% coverage (compatibility only)"
+      }
+    },
+    {
+      "name": "houseexpo_v1_b8ef6e1dec644e394ad6f39d7388d0de",
+      "file": "houseexpo_v1_b8ef6e1dec644e394ad6f39d7388d0de.pgm",
+      "sha256": "ee14e17c457e8963b1a2a04b51b40f830c5a175365e888242255f5b019f93ef0",
+      "split": "test",
+      "source_id": "b8ef6e1dec644e394ad6f39d7388d0de",
+      "rooms": 4,
+      "spawn_check_seed": 1126491737,
+      "tags": {
+        "free_area_m2": 145.21,
+        "free_components": 1,
+        "loops": 0,
+        "largest_island_m2": 0.0,
+        "narrow_share": 0.2574,
+        "geodesic_diameter_m": 38.4,
+        "free_height_m": 8.8,
+        "free_width_m": 23.4,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "250x250 uint8; values 0/205/254",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "clearance filter": "1 region(s) after 9x9-square erosion (0.9 m footprint)",
+        "area filter": "145.2 m\u00b2; selected range 100-400 m\u00b2",
+        "benchmark loader": "two robot starts [[101, 89], [144, 118]]",
+        "Cost smoke run": "3 steps; 35.7% coverage (compatibility only)"
+      }
+    },
+    {
+      "name": "houseexpo_v1_70699b6390b4596d1761c5118705a210",
+      "file": "houseexpo_v1_70699b6390b4596d1761c5118705a210.pgm",
+      "sha256": "7d0c770febed4ccb7c713e9afea8c2a4ef2f5038ae777da4e40f50f00900e02b",
+      "split": "test",
+      "source_id": "70699b6390b4596d1761c5118705a210",
+      "rooms": 5,
+      "spawn_check_seed": 1726428703,
+      "tags": {
+        "free_area_m2": 118.98,
+        "free_components": 1,
+        "loops": 0,
+        "largest_island_m2": 0.0,
+        "narrow_share": 0.2673,
+        "geodesic_diameter_m": 26.7,
+        "free_height_m": 13.6,
+        "free_width_m": 9.4,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "250x250 uint8; values 0/205/254",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "clearance filter": "1 region(s) after 9x9-square erosion (0.9 m footprint)",
+        "area filter": "119.0 m\u00b2; selected range 100-400 m\u00b2",
+        "benchmark loader": "two robot starts [[156, 126], [89, 100]]",
+        "Cost smoke run": "3 steps; 47.9% coverage (compatibility only)"
+      }
+    },
+    {
+      "name": "houseexpo_v1_4f663dd737422511afe32bc720f7822e",
+      "file": "houseexpo_v1_4f663dd737422511afe32bc720f7822e.pgm",
+      "sha256": "a229db2eb9727421016ff3bdd9c1fa6b9da36e9c12a6d93e73ef01f682781649",
+      "split": "test",
+      "source_id": "4f663dd737422511afe32bc720f7822e",
+      "rooms": 13,
+      "spawn_check_seed": 1653288122,
+      "tags": {
+        "free_area_m2": 208.71,
+        "free_components": 1,
+        "loops": 0,
+        "largest_island_m2": 0.0,
+        "narrow_share": 0.3688,
+        "geodesic_diameter_m": 33.4,
+        "free_height_m": 14.8,
+        "free_width_m": 18.4,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "250x250 uint8; values 0/205/254",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "clearance filter": "1 region(s) after 9x9-square erosion (0.9 m footprint)",
+        "area filter": "208.7 m\u00b2; selected range 100-400 m\u00b2",
+        "benchmark loader": "two robot starts [[111, 141], [139, 33]]",
+        "Cost smoke run": "3 steps; 15.2% coverage (compatibility only)"
+      }
+    },
+    {
+      "name": "houseexpo_v1_afb1e102188cc581e328606be6ea52c6",
+      "file": "houseexpo_v1_afb1e102188cc581e328606be6ea52c6.pgm",
+      "sha256": "a7735be9c5fd94d124589b29de9542ad17b80a02c4a6a64b0bb95fb33d32cb1b",
+      "split": "test",
+      "source_id": "afb1e102188cc581e328606be6ea52c6",
+      "rooms": 12,
+      "spawn_check_seed": 656753781,
+      "tags": {
+        "free_area_m2": 157.98,
+        "free_components": 1,
+        "loops": 0,
+        "largest_island_m2": 0.0,
+        "narrow_share": 0.3476,
+        "geodesic_diameter_m": 28.3,
+        "free_height_m": 10.1,
+        "free_width_m": 16.5,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "250x250 uint8; values 0/205/254",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "clearance filter": "1 region(s) after 9x9-square erosion (0.9 m footprint)",
+        "area filter": "158.0 m\u00b2; selected range 100-400 m\u00b2",
+        "benchmark loader": "two robot starts [[91, 74], [163, 82]]",
+        "Cost smoke run": "3 steps; 23.1% coverage (compatibility only)"
+      }
+    },
+    {
+      "name": "houseexpo_v1_30d2733effedbeba2f0b9d034331c052",
+      "file": "houseexpo_v1_30d2733effedbeba2f0b9d034331c052.pgm",
+      "sha256": "f00e410f18afd569c82d6e5bd0efac57855ef051237cf27d1086eb3448adca63",
+      "split": "test",
+      "source_id": "30d2733effedbeba2f0b9d034331c052",
+      "rooms": 5,
+      "spawn_check_seed": 4122870962,
+      "tags": {
+        "free_area_m2": 120.99,
+        "free_components": 1,
+        "loops": 0,
+        "largest_island_m2": 0.0,
+        "narrow_share": 0.2727,
+        "geodesic_diameter_m": 23.1,
+        "free_height_m": 11.4,
+        "free_width_m": 12.0,
+        "extent": "small"
+      },
+      "checks": {
+        "format": "250x250 uint8; values 0/205/254",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "clearance filter": "1 region(s) after 9x9-square erosion (0.9 m footprint)",
+        "area filter": "121.0 m\u00b2; selected range 100-400 m\u00b2",
+        "benchmark loader": "two robot starts [[68, 99], [161, 71]]",
+        "Cost smoke run": "3 steps; 42.1% coverage (compatibility only)"
+      }
+    },
+    {
+      "name": "houseexpo_v1_0d0c2cd68828c9d96295fe2f129c2aeb",
+      "file": "houseexpo_v1_0d0c2cd68828c9d96295fe2f129c2aeb.pgm",
+      "sha256": "68ce1871a3f42e46e1312f36201824db5109cc4337d6b141a207b2860df4784e",
+      "split": "test",
+      "source_id": "0d0c2cd68828c9d96295fe2f129c2aeb",
+      "rooms": 5,
+      "spawn_check_seed": 1339327784,
+      "tags": {
+        "free_area_m2": 189.23,
+        "free_components": 1,
+        "loops": 0,
+        "largest_island_m2": 0.0,
+        "narrow_share": 0.1853,
+        "geodesic_diameter_m": 27.7,
+        "free_height_m": 14.8,
+        "free_width_m": 13.1,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "250x250 uint8; values 0/205/254",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "clearance filter": "1 region(s) after 9x9-square erosion (0.9 m footprint)",
+        "area filter": "189.2 m\u00b2; selected range 100-400 m\u00b2",
+        "benchmark loader": "two robot starts [[179, 179], [127, 80]]",
+        "Cost smoke run": "3 steps; 31.3% coverage (compatibility only)"
+      }
+    },
+    {
+      "name": "houseexpo_v1_8fbcc78144a7e13acf01ad9baa20b77e",
+      "file": "houseexpo_v1_8fbcc78144a7e13acf01ad9baa20b77e.pgm",
+      "sha256": "12ad01be0edd72f0378642a73f806fc0fa69cbba7ddcea6f3c1a2fe6a59cc435",
+      "split": "test",
+      "source_id": "8fbcc78144a7e13acf01ad9baa20b77e",
+      "rooms": 7,
+      "spawn_check_seed": 2471336237,
+      "tags": {
+        "free_area_m2": 159.38,
+        "free_components": 1,
+        "loops": 0,
+        "largest_island_m2": 0.0,
+        "narrow_share": 0.3066,
+        "geodesic_diameter_m": 33.8,
+        "free_height_m": 18.2,
+        "free_width_m": 10.0,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "250x250 uint8; values 0/205/254",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "clearance filter": "1 region(s) after 9x9-square erosion (0.9 m footprint)",
+        "area filter": "159.4 m\u00b2; selected range 100-400 m\u00b2",
+        "benchmark loader": "two robot starts [[68, 131], [161, 77]]",
+        "Cost smoke run": "3 steps; 21.1% coverage (compatibility only)"
+      }
+    },
+    {
+      "name": "houseexpo_v1_5bdc4b26c95d62dcbd5dd8537e003575",
+      "file": "houseexpo_v1_5bdc4b26c95d62dcbd5dd8537e003575.pgm",
+      "sha256": "fc1956fbce1cfbb967ce5634fda00b1371bc7bb071f6574e8f0d866af60bdc85",
+      "split": "test",
+      "source_id": "5bdc4b26c95d62dcbd5dd8537e003575",
+      "rooms": 3,
+      "spawn_check_seed": 649425637,
+      "tags": {
+        "free_area_m2": 127.74,
+        "free_components": 1,
+        "loops": 0,
+        "largest_island_m2": 0.0,
+        "narrow_share": 0.2553,
+        "geodesic_diameter_m": 31.0,
+        "free_height_m": 11.3,
+        "free_width_m": 15.7,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "250x250 uint8; values 0/205/254",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "clearance filter": "1 region(s) after 9x9-square erosion (0.9 m footprint)",
+        "area filter": "127.7 m\u00b2; selected range 100-400 m\u00b2",
+        "benchmark loader": "two robot starts [[117, 82], [132, 165]]",
+        "Cost smoke run": "3 steps; 53.3% coverage (compatibility only)"
+      }
+    },
+    {
+      "name": "houseexpo_v1_a5561bf9f4f48e1500f95b65bda24442",
+      "file": "houseexpo_v1_a5561bf9f4f48e1500f95b65bda24442.pgm",
+      "sha256": "986afe2cfda728463eb846539293061500d66663dda11c1c9c01be95d847a06c",
+      "split": "test",
+      "source_id": "a5561bf9f4f48e1500f95b65bda24442",
+      "rooms": 10,
+      "spawn_check_seed": 1462396652,
+      "tags": {
+        "free_area_m2": 114.84,
+        "free_components": 1,
+        "loops": 0,
+        "largest_island_m2": 0.0,
+        "narrow_share": 0.2912,
+        "geodesic_diameter_m": 29.2,
+        "free_height_m": 11.8,
+        "free_width_m": 17.7,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "250x250 uint8; values 0/205/254",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "clearance filter": "1 region(s) after 9x9-square erosion (0.9 m footprint)",
+        "area filter": "114.8 m\u00b2; selected range 100-400 m\u00b2",
+        "benchmark loader": "two robot starts [[80, 171], [131, 128]]",
+        "Cost smoke run": "3 steps; 46.2% coverage (compatibility only)"
+      }
+    },
+    {
+      "name": "houseexpo_v1_f09477f2203503f08f3be3d933d1229a",
+      "file": "houseexpo_v1_f09477f2203503f08f3be3d933d1229a.pgm",
+      "sha256": "7c22f38093826cfc91d27893f0cc4a101752f018409ab2ada3365e7969b27887",
+      "split": "test",
+      "source_id": "f09477f2203503f08f3be3d933d1229a",
+      "rooms": 7,
+      "spawn_check_seed": 2393228881,
+      "tags": {
+        "free_area_m2": 202.62,
+        "free_components": 1,
+        "loops": 0,
+        "largest_island_m2": 0.0,
+        "narrow_share": 0.2637,
+        "geodesic_diameter_m": 30.7,
+        "free_height_m": 16.7,
+        "free_width_m": 14.1,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "250x250 uint8; values 0/205/254",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "clearance filter": "1 region(s) after 9x9-square erosion (0.9 m footprint)",
+        "area filter": "202.6 m\u00b2; selected range 100-400 m\u00b2",
+        "benchmark loader": "two robot starts [[190, 155], [178, 163]]",
+        "Cost smoke run": "3 steps; 16.4% coverage (compatibility only)"
+      }
+    },
+    {
+      "name": "houseexpo_v1_c32d9ae8b16b95ca5d2654d22697cf6f",
+      "file": "houseexpo_v1_c32d9ae8b16b95ca5d2654d22697cf6f.pgm",
+      "sha256": "57d8d3a70b74c2909b514a3f638a29a0b1f3ca68d50a24664c8eb83d45a9acfd",
+      "split": "test",
+      "source_id": "c32d9ae8b16b95ca5d2654d22697cf6f",
+      "rooms": 14,
+      "spawn_check_seed": 1195674671,
+      "tags": {
+        "free_area_m2": 131.85,
+        "free_components": 1,
+        "loops": 0,
+        "largest_island_m2": 0.0,
+        "narrow_share": 0.3874,
+        "geodesic_diameter_m": 28.9,
+        "free_height_m": 11.0,
+        "free_width_m": 13.5,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "250x250 uint8; values 0/205/254",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "clearance filter": "1 region(s) after 9x9-square erosion (0.9 m footprint)",
+        "area filter": "131.9 m\u00b2; selected range 100-400 m\u00b2",
+        "benchmark loader": "two robot starts [[109, 105], [101, 187]]",
+        "Cost smoke run": "3 steps; 20.7% coverage (compatibility only)"
+      }
+    },
+    {
+      "name": "houseexpo_v1_a1b03bd8c57c2bfb758d695eae1ab8f3",
+      "file": "houseexpo_v1_a1b03bd8c57c2bfb758d695eae1ab8f3.pgm",
+      "sha256": "529f852748094e145afe8851034ae46a539f7b8e4fec56f9c22df9a5590db5cd",
+      "split": "test",
+      "source_id": "a1b03bd8c57c2bfb758d695eae1ab8f3",
+      "rooms": 6,
+      "spawn_check_seed": 3467378416,
+      "tags": {
+        "free_area_m2": 189.46,
+        "free_components": 1,
+        "loops": 0,
+        "largest_island_m2": 0.0,
+        "narrow_share": 0.1997,
+        "geodesic_diameter_m": 30.4,
+        "free_height_m": 8.9,
+        "free_width_m": 21.8,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "250x250 uint8; values 0/205/254",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "clearance filter": "1 region(s) after 9x9-square erosion (0.9 m footprint)",
+        "area filter": "189.5 m\u00b2; selected range 100-400 m\u00b2",
+        "benchmark loader": "two robot starts [[139, 88], [84, 44]]",
+        "Cost smoke run": "3 steps; 33.5% coverage (compatibility only)"
+      }
+    },
+    {
+      "name": "houseexpo_v1_0c4a4b62871d0bacffd05bc1c5d2027d",
+      "file": "houseexpo_v1_0c4a4b62871d0bacffd05bc1c5d2027d.pgm",
+      "sha256": "f62e4b241b547166212f3316866ac58bb4614c92170b94010069360f1cd0ad60",
+      "split": "test",
+      "source_id": "0c4a4b62871d0bacffd05bc1c5d2027d",
+      "rooms": 6,
+      "spawn_check_seed": 58356480,
+      "tags": {
+        "free_area_m2": 210.39,
+        "free_components": 1,
+        "loops": 0,
+        "largest_island_m2": 0.0,
+        "narrow_share": 0.236,
+        "geodesic_diameter_m": 35.9,
+        "free_height_m": 14.0,
+        "free_width_m": 22.2,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "250x250 uint8; values 0/205/254",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "clearance filter": "1 region(s) after 9x9-square erosion (0.9 m footprint)",
+        "area filter": "210.4 m\u00b2; selected range 100-400 m\u00b2",
+        "benchmark loader": "two robot starts [[114, 184], [114, 210]]",
+        "Cost smoke run": "3 steps; 10.8% coverage (compatibility only)"
+      }
+    },
+    {
+      "name": "houseexpo_v1_73c5cb70fce8cc9751b8ba9537610974",
+      "file": "houseexpo_v1_73c5cb70fce8cc9751b8ba9537610974.pgm",
+      "sha256": "37f8fbecbf90293d23208bf31787984de17e6f4621770eb2359f6d4f2b008651",
+      "split": "test",
+      "source_id": "73c5cb70fce8cc9751b8ba9537610974",
+      "rooms": 6,
+      "spawn_check_seed": 3990592091,
+      "tags": {
+        "free_area_m2": 136.0,
+        "free_components": 1,
+        "loops": 0,
+        "largest_island_m2": 0.0,
+        "narrow_share": 0.3043,
+        "geodesic_diameter_m": 29.1,
+        "free_height_m": 9.8,
+        "free_width_m": 17.0,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "250x250 uint8; values 0/205/254",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "clearance filter": "1 region(s) after 9x9-square erosion (0.9 m footprint)",
+        "area filter": "136.0 m\u00b2; selected range 100-400 m\u00b2",
+        "benchmark loader": "two robot starts [[121, 89], [157, 198]]",
+        "Cost smoke run": "3 steps; 26.8% coverage (compatibility only)"
+      }
+    },
+    {
+      "name": "houseexpo_v1_3186ab91953afa8961c35f4c6df49485",
+      "file": "houseexpo_v1_3186ab91953afa8961c35f4c6df49485.pgm",
+      "sha256": "0e83d9e779afefcc15c1ade82398d402b9c2cfcb1187e4ea06552c255d792fba",
+      "split": "test",
+      "source_id": "3186ab91953afa8961c35f4c6df49485",
+      "rooms": 13,
+      "spawn_check_seed": 409886591,
+      "tags": {
+        "free_area_m2": 175.78,
+        "free_components": 1,
+        "loops": 0,
+        "largest_island_m2": 0.0,
+        "narrow_share": 0.3684,
+        "geodesic_diameter_m": 31.5,
+        "free_height_m": 18.5,
+        "free_width_m": 14.3,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "250x250 uint8; values 0/205/254",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "clearance filter": "1 region(s) after 9x9-square erosion (0.9 m footprint)",
+        "area filter": "175.8 m\u00b2; selected range 100-400 m\u00b2",
+        "benchmark loader": "two robot starts [[74, 115], [123, 92]]",
+        "Cost smoke run": "3 steps; 27.9% coverage (compatibility only)"
+      }
+    },
+    {
+      "name": "houseexpo_v1_4c6f4bc3ad47b5ed3ddb89cde7fc8277",
+      "file": "houseexpo_v1_4c6f4bc3ad47b5ed3ddb89cde7fc8277.pgm",
+      "sha256": "d23ce2518a147896c02f20975c7ba1ae17bfa07abaf39958b432092b39497f76",
+      "split": "test",
+      "source_id": "4c6f4bc3ad47b5ed3ddb89cde7fc8277",
+      "rooms": 2,
+      "spawn_check_seed": 1702072523,
+      "tags": {
+        "free_area_m2": 116.52,
+        "free_components": 1,
+        "loops": 0,
+        "largest_island_m2": 0.0,
+        "narrow_share": 0.1678,
+        "geodesic_diameter_m": 24.4,
+        "free_height_m": 8.9,
+        "free_width_m": 15.8,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "250x250 uint8; values 0/205/254",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "clearance filter": "1 region(s) after 9x9-square erosion (0.9 m footprint)",
+        "area filter": "116.5 m\u00b2; selected range 100-400 m\u00b2",
+        "benchmark loader": "two robot starts [[97, 133], [145, 186]]",
+        "Cost smoke run": "3 steps; 55.8% coverage (compatibility only)"
+      }
+    },
+    {
+      "name": "houseexpo_v1_765c66b51cd9abd98e4072fb3408f0df",
+      "file": "houseexpo_v1_765c66b51cd9abd98e4072fb3408f0df.pgm",
+      "sha256": "eea1034bba241f8dbaf937d8dfdf9718df4e7cb57525e299189567211552bd46",
+      "split": "test",
+      "source_id": "765c66b51cd9abd98e4072fb3408f0df",
+      "rooms": 7,
+      "spawn_check_seed": 3739573749,
+      "tags": {
+        "free_area_m2": 271.3,
+        "free_components": 1,
+        "loops": 0,
+        "largest_island_m2": 0.0,
+        "narrow_share": 0.2496,
+        "geodesic_diameter_m": 41.8,
+        "free_height_m": 13.3,
+        "free_width_m": 21.3,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "250x250 uint8; values 0/205/254",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "clearance filter": "1 region(s) after 9x9-square erosion (0.9 m footprint)",
+        "area filter": "271.3 m\u00b2; selected range 100-400 m\u00b2",
+        "benchmark loader": "two robot starts [[82, 203], [144, 75]]",
+        "Cost smoke run": "3 steps; 17.6% coverage (compatibility only)"
+      }
+    },
+    {
+      "name": "houseexpo_v1_fbbe8c40ccd86e3fc4390872a6f82355",
+      "file": "houseexpo_v1_fbbe8c40ccd86e3fc4390872a6f82355.pgm",
+      "sha256": "e8c74de0132c7c3a31369aa7a0e7342b7f39665348f63cdc3f54cdbdb709051f",
+      "split": "test",
+      "source_id": "fbbe8c40ccd86e3fc4390872a6f82355",
+      "rooms": 3,
+      "spawn_check_seed": 4101306701,
+      "tags": {
+        "free_area_m2": 188.04,
+        "free_components": 1,
+        "loops": 0,
+        "largest_island_m2": 0.0,
+        "narrow_share": 0.1761,
+        "geodesic_diameter_m": 34.6,
+        "free_height_m": 14.6,
+        "free_width_m": 14.7,
+        "extent": "full"
+      },
+      "checks": {
+        "format": "250x250 uint8; values 0/205/254",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "clearance filter": "1 region(s) after 9x9-square erosion (0.9 m footprint)",
+        "area filter": "188.0 m\u00b2; selected range 100-400 m\u00b2",
+        "benchmark loader": "two robot starts [[157, 79], [150, 197]]",
+        "Cost smoke run": "3 steps; 38.1% coverage (compatibility only)"
+      }
+    },
+    {
+      "name": "houseexpo_v1_7ed80142ac339a04408d2167b9be2beb",
+      "file": "houseexpo_v1_7ed80142ac339a04408d2167b9be2beb.pgm",
+      "sha256": "cb69b590c0cd2de9374465eac247f06b377d6dfcfe4918acdcb1bcc213c7a43e",
+      "split": "test",
+      "source_id": "7ed80142ac339a04408d2167b9be2beb",
+      "rooms": 4,
+      "spawn_check_seed": 871620966,
+      "tags": {
+        "free_area_m2": 116.69,
+        "free_components": 1,
+        "loops": 0,
+        "largest_island_m2": 0.0,
+        "narrow_share": 0.2155,
+        "geodesic_diameter_m": 21.6,
+        "free_height_m": 12.0,
+        "free_width_m": 9.9,
+        "extent": "small"
+      },
+      "checks": {
+        "format": "250x250 uint8; values 0/205/254",
+        "enclosed": "0 free cells touch outside",
+        "connected": "1 free region(s)",
+        "clearance filter": "1 region(s) after 9x9-square erosion (0.9 m footprint)",
+        "area filter": "116.7 m\u00b2; selected range 100-400 m\u00b2",
+        "benchmark loader": "two robot starts [[128, 148], [171, 80]]",
+        "Cost smoke run": "3 steps; 43.9% coverage (compatibility only)"
+      }
+    }
+  ]
+}
