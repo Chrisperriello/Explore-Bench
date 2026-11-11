@@ -58,7 +58,9 @@ def evaluate(spec, tasks, output, controller, training_seed="", checkpoint_hash=
                      training_seed=training_seed, checkpoint_sha256=checkpoint_hash,
                      selection_sha256=getattr(controller, "selection_sha256", None),
                      tasks=[task.to_dict() for task in tasks],
-                     tasks_sha256=digest([task.to_dict() for task in tasks]), episodes_completed=0)
+                     tasks_sha256=digest([task.to_dict() for task in tasks]), episodes_completed=0,
+                     **({"trained_configuration_sha256": controller.trained_configuration_sha256}
+                        if getattr(controller, "trained_configuration_sha256", None) else {}))
     recorder = None
     session = Session(spec)
     # Classical adapters receive a restricted view; all other controllers only

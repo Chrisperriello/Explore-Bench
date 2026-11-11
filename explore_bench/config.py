@@ -210,3 +210,25 @@ def evaluation_tasks(spec, suite):
     }[suite]
     return [task_for(spec, name, seed, suite) for name in spec["maps"][split]
             for seed in range(first, first + 10)]
+
+
+def retest_configuration(trained, spec):
+    """Return spec if it only renames the experiment and replaces its test maps.
+
+    A checkpoint is locked to the configuration it was trained with
+    (ActorController checks the digest). Re-testing a trained policy on new
+    test maps, such as maps/rooms_v1, must not change anything the policy
+    learned from: sensor, channel, rewards, training settings, and the train
+    and validation maps all stay identical, so only generalization is
+    measured. The new spec's own digest goes into the run record, and its
+    test maps are part of score()'s physical contract, so these results can
+    never be pooled with the original test set.
+    """
+    def fixed(value):
+        value = copy.deepcopy(value)
+        value.pop("name")
+        value["maps"].pop("test")
+        return value
+    if fixed(trained) != fixed(spec):
+        raise ValueError("re-testing may change only the experiment name and test maps")
+    return spec

@@ -44,6 +44,9 @@ def main(argv=None):
     # 2026-10-26, so sharding is now versioned and recorded in provenance.
     # Used by hpc/jobs/mappo/run_baseline_shard.sbatch.
     evaluation.add_argument("--maps", nargs="+", help="only these map names (file stems), e.g. one shard per map")
+    # --seeds shards further, one job per episode. Four-beam MMPF took up to
+    # 39 h per map (job 22702, 2026-11-02); one episode is about a tenth.
+    evaluation.add_argument("--seeds", nargs="+", type=int, help="only these episode seeds, e.g. 30001")
     evaluation.add_argument("--output", type=Path, required=True)
     scoring = commands.add_parser("score")
     scoring.add_argument("--inputs", nargs="+", type=Path, required=True)
@@ -74,15 +77,23 @@ def main(argv=None):
         from .evaluation import evaluate, read_tasks
         seed, checkpoint_hash = "", ""
         if args.controller == "mappo":
-            if not args.selection or args.config:
-                parser.error("MAPPO testing requires --selection and uses its frozen configuration")
+            if not args.selection:
+                parser.error("MAPPO testing requires --selection")
             from .mappo import ActorController
             with args.selection.open(encoding="utf-8") as handle:
                 selection_record = json.load(handle)
             if selection_record.get("kind") != "selection" or selection_record.get("status") != "complete":
                 parser.error("invalid checkpoint selection record")
-            spec = selection_record["configuration"]
-            controller = ActorController(selection_record["selected"]["checkpoint"], spec)
+            trained = selection_record["configuration"]
+            controller = ActorController(selection_record["selected"]["checkpoint"], trained)
+            spec = trained
+            if args.config:
+                # Re-test on new test maps: the checkpoint is still verified
+                # against its training configuration above, and the run
+                # records that configuration's digest beside the new one.
+                from .config import digest, retest_configuration
+                spec = retest_configuration(trained, configuration(args.config))
+                controller.trained_configuration_sha256 = digest(trained)
             if controller.checkpoint_hash != selection_record["selected"]["actor_sha256"]:
                 raise ValueError("selection checkpoint hash mismatch")
             from .config import file_hash
@@ -106,6 +117,11 @@ def main(argv=None):
             missing = set(args.maps) - {Path(task.map_path).stem for task in tasks}
             if missing:
                 parser.error("no tasks for maps {} in suites {}".format(sorted(missing), args.suite))
+        if args.seeds:
+            tasks = [task for task in tasks if task.seed in args.seeds]
+            missing = set(args.seeds) - {task.seed for task in tasks}
+            if missing:
+                parser.error("no tasks for seeds {} in this selection".format(sorted(missing)))
         evaluate(spec, tasks, args.output, controller, seed, checkpoint_hash)
     else:
         from .scoring import score

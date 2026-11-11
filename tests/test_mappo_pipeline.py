@@ -357,3 +357,62 @@ def test_classical_distance_map_does_not_wrap_on_uint8_beliefs():
     as_legacy = env.dismapConstruction_start_target([1, 1], grid.astype(np.float64))
     assert as_belief[1, 300] == 299
     np.testing.assert_array_equal(as_belief, as_legacy)
+
+
+def test_trained_policy_retests_on_new_test_maps_only(spec, tmp_path):
+    """A selected checkpoint runs on a config that replaces only the test maps.
+
+    The run records the training configuration's digest beside the new one,
+    and a config changing anything else (here the sensor range) is refused,
+    so a re-test measures generalization and nothing else.
+    """
+    from explore_bench.__main__ import main
+    from explore_bench.config import digest
+    train(spec, tmp_path / "train", 1, allow_dirty=True)
+    tasks = tmp_path / "tasks.json"
+    prepare(spec, tasks)
+    validate(tmp_path / "train", tasks, tmp_path / "validation")
+    selection = tmp_path / "selection.json"
+    select(tmp_path / "validation", selection)
+    new_map = tmp_path / "new_test.pgm"
+    grid = np.full((12, 14), 254, dtype=np.uint8)
+    grid[0, :] = grid[-1, :] = grid[:, 0] = grid[:, -1] = 0
+    grid[3:6, 6] = 0
+    Image.fromarray(grid).save(str(new_map))
+    original = json.loads((tmp_path / "configuration.json").read_text())
+    changed = dict(original, name="retest", maps=dict(original["maps"], test=[str(new_map)]))
+    retest = tmp_path / "retest.json"
+    retest.write_text(json.dumps(changed))
+    new_tasks = tmp_path / "retest_tasks.json"
+    prepare(configuration(retest), new_tasks)
+    output = tmp_path / "retest_run"
+    assert main(["evaluate", "--controller", "mappo", "--selection", str(selection), "--config", str(retest),
+                 "--tasks", str(new_tasks), "--suite", "unseen", "--output", str(output)]) == 0
+    record, rows, _ = checked_rows(output)
+    assert record["trained_configuration_sha256"] == digest(spec)
+    assert record["configuration"]["maps"]["test"] == [str(new_map)]
+    assert {Path(row["map_path"]).stem for row in rows} == {"new_test"}
+    wrong = tmp_path / "wrong.json"
+    wrong.write_text(json.dumps(dict(changed, sensor_range=0.3)))
+    with pytest.raises(ValueError, match="only the experiment name and test maps"):
+        main(["evaluate", "--controller", "mappo", "--selection", str(selection), "--config", str(wrong),
+              "--tasks", str(new_tasks), "--output", str(tmp_path / "refused")])
+
+
+def test_episode_shards_run_one_episode(spec, tmp_path):
+    from explore_bench.__main__ import main
+    tasks = tmp_path / "tasks.json"
+    prepare(spec, tasks)
+    configuration_path = tmp_path / "configuration.json"
+    stem = Path(spec["maps"]["test"][0]).stem
+    shards = []
+    for seed in range(30001, 30011):
+        shards.append(tmp_path / "wait" / "unseen__{}__seed_{}".format(stem, seed))
+        assert main(["evaluate", "--controller", "wait", "--config", str(configuration_path), "--tasks", str(tasks),
+                     "--suite", "unseen", "--maps", stem, "--seeds", str(seed), "--output", str(shards[-1])]) == 0
+        assert len(checked_rows(shards[-1])[1]) == 1
+    # Ten one-episode directories score as the full ten-episode suite.
+    score(shards, tmp_path / "scores")
+    with pytest.raises(SystemExit):
+        main(["evaluate", "--controller", "wait", "--config", str(configuration_path), "--tasks", str(tasks),
+              "--suite", "unseen", "--seeds", "99999", "--output", str(tmp_path / "missing")])
