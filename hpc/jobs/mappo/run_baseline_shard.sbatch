@@ -36,15 +36,30 @@ export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
 export MPLCONFIGDIR="${TMPDIR:-/tmp}/explore-mappo-${SLURM_JOB_ID}"
 PYTHON="${EXPLORE_BENCH_ROOT}/.conda-env/bin/python"
 
-# Array task N reads line N+1 ("controller suite map") of the shard list.
+# Array task N reads line N+1 ("controller suite map episode training_seed")
+# of the shard list; "-" means every episode of the map / not MAPPO.
 # Reading a frozen file, rather than computing the shard here, means every
 # task of the array sees the same list even if the repository changes later.
-read -r CONTROLLER SUITE MAP < <(sed -n "$((SLURM_ARRAY_TASK_ID + 1))p" "${EXPLORE_MAPPO_SHARDS:?}")
+read -r CONTROLLER SUITE MAP EPISODE TRAINING_SEED < <(sed -n "$((SLURM_ARRAY_TASK_ID + 1))p" "${EXPLORE_MAPPO_SHARDS:?}")
+NAME="${SUITE}__${MAP}"
+FILTER=(--maps "$MAP")
+if [ "${EPISODE:--}" != - ]; then
+    NAME="${NAME}__seed_${EPISODE}"
+    FILTER+=(--seeds "$EPISODE")
+fi
+if [ "$CONTROLLER" = mappo ]; then
+    # Re-test a trained policy: the selection fixes the checkpoint, the
+    # config supplies only the new test maps (retest_configuration).
+    POLICY=(--selection "${EXPLORE_MAPPO_SELECTIONS:?}/seed_${TRAINING_SEED}.json")
+    OUTPUT="${EXPLORE_MAPPO_DIRECTORY:?}/evaluation/seed_${TRAINING_SEED}/${NAME}"
+else
+    POLICY=()
+    OUTPUT="${EXPLORE_MAPPO_DIRECTORY:?}/baselines/${CONTROLLER}/${NAME}"
+fi
 
 # exec hands the process to Python so Slurm signals reach it directly.
-# --maps restricts the frozen suite to this map; the output directory name
-# <suite>__<map> keeps shards distinct and readable. evaluate refuses to
-# overwrite an existing directory, so a rerun needs the old one moved aside.
-exec "$PYTHON" -m explore_bench evaluate --controller "$CONTROLLER" --config "${EXPLORE_MAPPO_CONFIG:?}" \
-  --tasks "${EXPLORE_MAPPO_DIRECTORY:?}/tasks.json" --suite "$SUITE" --maps "$MAP" \
-  --output "${EXPLORE_MAPPO_DIRECTORY}/baselines/${CONTROLLER}/${SUITE}__${MAP}"
+# --maps/--seeds restrict the frozen suite to this shard; evaluate refuses
+# to overwrite an existing directory, so a rerun needs the old one moved aside.
+exec "$PYTHON" -m explore_bench evaluate --controller "$CONTROLLER" ${POLICY[@]+"${POLICY[@]}"} \
+  --config "${EXPLORE_MAPPO_CONFIG:?}" --tasks "${EXPLORE_MAPPO_DIRECTORY}/tasks.json" \
+  --suite "$SUITE" "${FILTER[@]}" --output "$OUTPUT"
