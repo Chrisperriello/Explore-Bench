@@ -125,10 +125,10 @@ def present(episodes):
     return [m for m in METHODS if m in found]
 
 
-def finish(figure, title, note, path):
+def finish(figure, title, note, path, bottom=0.06):
     figure.suptitle(title, x=0.01, ha="left", fontsize=13, color=INK)
     figure.text(0.01, 0.01, note, fontsize=8.5, color=MUTED, ha="left", va="bottom", wrap=True)
-    figure.tight_layout(rect=(0, 0.06, 1, 0.94))
+    figure.tight_layout(rect=(0, bottom, 1, 0.94))
     figure.savefig(path, dpi=160)
     plt.close(figure)
     print(path)
@@ -168,10 +168,11 @@ def headline(episodes, sensor, out, excluded):
            out)
 
 
-def old_vs_new(episodes, old_scores, sensor, out):
+def old_vs_new(episodes, old_scores, sensor, out, unreachable):
     old = {(r["method"], r["suite"], r["training_seed"]): r for r in read(Path(old_scores) / "per_seed.csv")}
     groups = [("familiar", "Familiar\n(8 training maps)"), ("unseen", "Old test\n(2 loop maps)"),
-              ("rooms", "rooms_v1\n(16, no courtyard)"), ("courtyard", "rooms_v1 courtyard\n(14; 13 cannot reach 99%)"),
+              ("rooms", "rooms_v1\n(16, no courtyard)"), ("courtyard", "rooms_v1 courtyard\n(14; {} cannot reach 99%)".format(
+                  sum(m.startswith("rooms") for m in unreachable))),
               ("houseexpo", "HouseExpo\n(30 new)")]
     figure, ax = plt.subplots(figsize=(12.5, 4.8))
     width = 0.26
@@ -208,7 +209,9 @@ def coverage_over_time(collection, sensor, out):
     curves = defaultdict(lambda: defaultdict(list))
     for r in rows:
         curves[r["method"]][r["training_seed"]].append(float(r["mean_coverage"]))
-    figure, axes = plt.subplots(1, 2, figsize=(11, 4.6), sharex=True)
+    finals = [np.mean([v[-1] for v in curves[m].values()]) for m in PLANNERS if m in curves]
+    floor = min(0.85, np.floor((min(finals) - 0.05) * 20) / 20)
+    figure, axes = plt.subplots(1, 2, figsize=(11, 4.9), sharex=True)
     for ax, zoom in zip(axes, (False, True)):
         for method in METHODS:
             if method not in curves:
@@ -223,16 +226,18 @@ def coverage_over_time(collection, sensor, out):
         ax.set_xlabel("Decision step")
         ax.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0))
         if zoom:
-            ax.set_ylim(0.85, 1.0)
-            ax.set_title("Zoom: 85–100%", loc="left", fontsize=11)
+            ax.set_ylim(floor, 1.0)
+            ax.set_title("Zoom: {:.0f}–100%".format(100 * floor), loc="left", fontsize=11)
         else:
             ax.set_ylim(0, 1.02)
             ax.set_title("Mean team coverage", loc="left", fontsize=11)
-    axes[0].legend(loc="center", bbox_to_anchor=(0.62, 0.39), ncol=2, frameon=False, labelcolor=INK2, fontsize=9.5)
+    handles, labels = axes[0].get_legend_handles_labels()
+    figure.legend(handles, labels, loc="lower center", bbox_to_anchor=(0.5, 0.055), ncol=len(labels),
+                  frameon=False, labelcolor=INK2)
     finish(figure, "How fast each method explores, 60 new maps ({})".format(sensor),
            "Mean coverage over all 600 episodes at each step; finished episodes carry their final coverage forward. "
            "MAPPO band: lowest to highest of the 5 seed curves. Dashed line: 99% target.",
-           out)
+           out, bottom=0.12)
 
 
 def paired_gap(episodes, sensor, out):
@@ -413,23 +418,26 @@ def main(argv=None):
     parser.add_argument("output", type=Path)
     parser.add_argument("--collection", type=Path, action="append", required=True)
     parser.add_argument("--old-scores", type=Path, action="append", required=True)
-    parser.add_argument("--ceilings", type=Path, help="coverage_ceiling.py CSV; maps below the target are left "
-                        "out of the headline and paired figures")
+    parser.add_argument("--ceilings", type=Path, action="append", default=[],
+                        help="coverage_ceiling.py CSV, one per --collection (same sensor); maps below the "
+                        "target are left out of the headline and paired figures")
     args = parser.parse_args(argv)
     if len(args.collection) != len(args.old_scores):
         parser.error("give one --old-scores per --collection")
     args.output.mkdir(parents=True, exist_ok=True)
-    unreachable = set()
-    if args.ceilings:
-        unreachable = {r["map"] for r in read(args.ceilings) if float(r["coverage_ceiling"]) < 0.99}
+    if args.ceilings and len(args.ceilings) != len(args.collection):
+        parser.error("give one --ceilings per --collection")
     loaded = []
-    for collection, old in zip(args.collection, args.old_scores):
+    for index, (collection, old) in enumerate(zip(args.collection, args.old_scores)):
+        unreachable = set()
+        if args.ceilings:
+            unreachable = {r["map"] for r in read(args.ceilings[index]) if float(r["coverage_ceiling"]) < 0.99}
         episodes, sensor = load(collection)
         tag = "360" if sensor.startswith("360") else "four_beam"
         out = lambda name: args.output / "{}_{}.png".format(name, tag)  # noqa: E731
         reachable = [e for e in episodes if e["map"] not in unreachable]
         headline(reachable, sensor, out("01_headline"), len(unreachable))
-        old_vs_new(episodes, old, sensor, out("02_old_vs_new_test_sets"))
+        old_vs_new(episodes, old, sensor, out("02_old_vs_new_test_sets"), unreachable)
         coverage_over_time(collection, sensor, out("03_coverage_over_time"))
         paired_gap(reachable, sensor, out("04_paired_gap_per_map"))
         difficulty_grid(episodes, sensor, out("05_difficulty_grid"))
