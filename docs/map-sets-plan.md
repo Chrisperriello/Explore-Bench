@@ -51,6 +51,36 @@ maps share one scale (`python -m explore_bench.map_tags MAP.pgm ...`):
 Room and door counts are not computed from the image; the manifest copies
 them from the source when it records them (generator, HouseExpo `room_num`).
 
+### Known problem (2026-11-12): tags are labels only, not analysis variables
+
+Until this is fixed, **no layout analysis** (results split or correlated by
+tag, room count, rooms vs HouseExpo "structure") may be reported. Tags can
+name and sort maps, nothing more. Found from the `show_map_set.py` view of
+houseexpo_v1:
+
+- **`rooms` does not describe the drawn map.** For HouseExpo it is the
+  source's `room_num`, but rooms exist in the source only as `room_category`
+  bounding boxes; the grid is drawn from the `verts` outline alone. Layout
+  `9b617c34…` has `room_num` 10, `verts` is a 5-point square, and the map is
+  one empty 15 x 16 m room. Measured interior wall per map runs from 0 to
+  116 m and only loosely tracks `rooms` (`a5561b…`: 10 rooms, ~24 m of wall).
+  Checked against the pinned archive (SHA dad4a7d2…), so this is the source
+  data, not the rasterizer. For rooms_v1 courtyard maps `rooms` is also
+  approximate.
+- **`narrow_share` measures wall perimeter, not corridors.** It is the share
+  of free cells within 0.5 m of any wall, so the empty square scores 0.10;
+  it mostly grows with wall length per area.
+- **`loops` cannot separate HouseExpo layouts.** Every houseexpo_v1 map has 0,
+  because interior walls attach to the outline. Topologically correct, but it
+  carries no information for that set.
+
+To resolve before any layout figure: derive room/door structure from the
+grid itself (e.g. rooms as regions split at doorways), redefine narrowness
+as passage width (free-space medial axis), decide whether layouts with
+almost no interior wall stay in the test set, and re-check tags by eye
+against `show_map_set.py`. Frozen manifests are write-once, so corrected tags
+are a recomputed table joined by map hash, not an edit to the sets.
+
 Results such as "Cost steps to 99%" are not tags; they come from baseline
 runs. Analysis joins `episodes.csv` (`map_name`) to the manifest, so results
 can be reported per tag bin, e.g. success against `loops`.
