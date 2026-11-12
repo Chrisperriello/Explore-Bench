@@ -74,6 +74,15 @@ houseexpo_v1:
   because interior walls attach to the outline. Topologically correct, but it
   carries no information for that set.
 
+- **13 of 14 rooms_v1 courtyard maps cannot reach the 99% target.** Coverage
+  (`measurement()` in explore_bench/session.py) counts every non-outside
+  cell, walls included, and the 360° scanner never sees inside a solid
+  courtyard block. Best reachable coverage, sensing from every third free
+  cell (`analysis/newmaps/coverage_ceiling.py`): 84–98.5%; seed 7 99.35%.
+  Every method scored 0 successes on all 14 in mappo_omni_3p5_newmaps_01.
+  Success figures leave these maps out; a rooms_v2 should either make
+  courtyard cores hollow or validate the coverage ceiling at freeze time.
+
 To resolve before any layout figure: derive room/door structure from the
 grid itself (e.g. rooms as regions split at doorways), redefine narrowness
 as passage width (free-space medial axis), decide whether layouts with
