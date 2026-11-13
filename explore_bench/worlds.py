@@ -18,8 +18,14 @@ class MemoryRecorder:
 
 
 class TrainingWorld:
-    def __init__(self, spec, training_seed, rank):
+    # The method recorded in training episodes.csv. A class attribute, so a
+    # world pickled into an older checkpoint (no instance value) still reads
+    # "mappo" when restored.
+    method = "mappo"
+
+    def __init__(self, spec, training_seed, rank, method="mappo"):
         self.spec, self.training_seed, self.rank = spec, training_seed, rank
+        self.method = method
         self.rng = random.Random((training_seed << 16) + rank)
         self.session = Session(spec)
         self.episode = 0
@@ -38,7 +44,7 @@ class TrainingWorld:
                 break
         else:
             raise ValueError("100 training starts already achieve target; choose a harder map/range")
-        self.ledger = EpisodeLedger(self.session, "mappo", self.training_seed)
+        self.ledger = EpisodeLedger(self.session, self.method, self.training_seed)
         self.ledger.observe(self.session, MemoryRecorder())
 
     def step(self, request):
@@ -55,13 +61,13 @@ class TrainingWorld:
                 "episodes": sink.episodes}
 
 
-def _serve(connection, spec, seed, rank, restored):
+def _serve(connection, spec, seed, rank, restored, method):
     # The parent owns graceful checkpointing. A process-group Ctrl-C/TERM
     # must not kill a worker while the parent is finishing its rollout.
     for signum in (signal.SIGINT, signal.SIGTERM, signal.SIGUSR1):
         signal.signal(signum, signal.SIG_IGN)
     try:
-        world = restored if restored is not None else TrainingWorld(spec, seed, rank)
+        world = restored if restored is not None else TrainingWorld(spec, seed, rank, method)
         connection.send((True, world.current))
         while True:
             command, argument = connection.recv()
@@ -83,7 +89,7 @@ def _serve(connection, spec, seed, rank, restored):
 class WorldBatch:
     """One session per worker; state stays in that worker until checkpointed."""
 
-    def __init__(self, spec, seed, restored=None):
+    def __init__(self, spec, seed, restored=None, method="mappo"):
         self.connections, self.processes = [], []
         count = spec["training"]["num_envs"]
         if restored is not None and len(restored) != count:
@@ -91,14 +97,14 @@ class WorldBatch:
         self.local = None
         try:
             if count == 1:
-                self.local = restored[0] if restored else TrainingWorld(spec, seed, 0)
+                self.local = restored[0] if restored else TrainingWorld(spec, seed, 0, method)
                 self.observations = [self.local.current]
             else:
                 context = get_context("spawn")
                 for rank in range(count):
                     parent, child = context.Pipe()
                     process = context.Process(target=_serve, args=(child, spec, seed, rank,
-                                               restored[rank] if restored else None), daemon=True)
+                                               restored[rank] if restored else None, method), daemon=True)
                     process.start()
                     child.close()
                     self.connections.append(parent)
