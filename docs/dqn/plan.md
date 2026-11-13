@@ -52,7 +52,29 @@ learning algorithm and the discrete action it needs, nothing else.
 | D0 | Score every frontier, or a fixed list? | Q-map over a 64 x 64 grid, illegal cells masked | A fixed output needs a fixed meaning; a location keeps one, frontier #k does not. Every frontier gets a score. | 2026-11-12 |
 | D1 | Which cells are legal, where the mask comes from, what request is sent | Legal = Q-map cells holding a reachable frontier target; the session computes the mask from the full-resolution belief; the action is sent as that target's exact cell (`motion_goals`) | One action per real choice; the blurred 64 x 64 channels would allow cells with no frontier; Q-learning must credit the executed action, and snapping to a neighbour's frontier would break that | 2026-11-12 |
 | D1b | What a robot does when it has no reachable frontier | A "stay" action (its own Q-map cell, goal = its position), legal only then | Keeps the learning target's max over legal next actions defined; waiting still earns the teammate's team reward, so treating it as worth 0 is wrong; MAPPO and the classical planners also stay; an always-legal stay would give DQN an option the others lack | 2026-11-12 |
-| D2 | Q-network inputs, architecture, parameter sharing | open | | |
+| D2a | Q-network inputs | MAPPO's actor inputs: the 8 map channels (own sensing, own walls, own position, own trail; team belief, team walls, teammate position, its freshness) plus robot identity. The legal mask is applied to the output only | Identical inputs keep the comparison to the learning algorithm; giving the mask as an input channel is a later ablation if DQN struggles | 2026-11-13 |
+| D2b | Q-network architecture | open | | |
+| D2c | One network per robot or shared | One network shared by all robots, each robot feeding its own observation | Same as MAPPO (`share_policy=True`); doubles the data; works for any team size | 2026-11-13 |
+
+## Proposed extensions (not in v1)
+
+- **Rotate in place (proposed by Chris, 2026-11-13), four-beam only.** The
+  four beams point at heading + 0/90/180/270 degrees
+  (`FourBeamSensor.measure`, onpolicy/onpolicy/envs/GridEnv/sensors.py), and
+  heading follows the last move (`calculate_pose`, GridEnv.py:822), so a robot
+  only gets axis-aligned or diagonal beams by driving. A "turn 45 degrees"
+  action would sense new directions without moving. It would be a few extra
+  non-map outputs beside the Q-map, plus a new request type in
+  `Session.step_request`, which is a new environment semantics version.
+  MAPPO, Cost and MMPF cannot rotate, so it is an arm of its own: DQN with and
+  without rotation on four-beam, asking whether an explicit sensing action
+  helps when sensing is poor. With 360 degree sensing rotation changes nothing.
+- **More than two robots.** The shared network itself handles any count, but
+  configuration is frozen to 2 (explore_bench/config.py:115) and two inputs
+  depend on team size: the identity one-hot has one entry per robot, and
+  position markers are scaled by 255 // (1 + ... + N) (session.py:80,
+  observations.py). A network trained with 2 robots therefore cannot run 3
+  as is; decide how to encode identity before scaling the team.
 
 ### D1 implementation notes
 
