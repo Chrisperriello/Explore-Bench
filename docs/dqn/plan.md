@@ -30,9 +30,11 @@ learning algorithm and the discrete action it needs, nothing else.
 
 ## Stages
 
-1. **Actions.** Q-map indexing (done: `action_cell`, `qmap_cell` in
-   explore_bench/dqn.py), the legal-action mask, and the request an action
-   becomes. Decision D1.
+1. **Actions (done).** Q-map indexing, the legal-action mask, the stay
+   action, and `masked_argmax` / `request` in explore_bench/dqn.py.
+   Decisions D1, D1b. Communication action is always 0 (SILENCE): valid for
+   the `perfect` and `none` modes only; `parallel` and `shared_collision`
+   need a communication head later (research-plan step 5).
 2. **Q-network.** Inputs and architecture. Decision D2.
 3. **Replay buffer.** Size and storage; one 8 x 64 x 64 float32 observation
    is 128 KB. Decision D3.
@@ -49,7 +51,8 @@ learning algorithm and the discrete action it needs, nothing else.
 |---|---|---|---|---|
 | D0 | Score every frontier, or a fixed list? | Q-map over a 64 x 64 grid, illegal cells masked | A fixed output needs a fixed meaning; a location keeps one, frontier #k does not. Every frontier gets a score. | 2026-11-12 |
 | D1 | Which cells are legal, where the mask comes from, what request is sent | Legal = Q-map cells holding a reachable frontier target; the session computes the mask from the full-resolution belief; the action is sent as that target's exact cell (`motion_goals`) | One action per real choice; the blurred 64 x 64 channels would allow cells with no frontier; Q-learning must credit the executed action, and snapping to a neighbour's frontier would break that | 2026-11-12 |
-| D1b | What a robot does when it has no reachable frontier | open | | |
+| D1b | What a robot does when it has no reachable frontier | A "stay" action (its own Q-map cell, goal = its position), legal only then | Keeps the learning target's max over legal next actions defined; waiting still earns the teammate's team reward, so treating it as worth 0 is wrong; MAPPO and the classical planners also stay; an always-legal stay would give DQN an option the others lack | 2026-11-12 |
+| D2 | Q-network inputs, architecture, parameter sharing | open | | |
 
 ### D1 implementation notes
 

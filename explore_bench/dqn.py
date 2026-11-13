@@ -45,6 +45,12 @@ def frontier_qmap(session, side=SIDE):
     [agents, side, side, 2] int64, the grid cell a legal action sends the robot
     to (-1 elsewhere). When two targets fall in one Q-map cell, the one nearest
     the cell centre is kept (ties by cell), so each action names one place.
+
+    A robot with no reachable frontier gets one legal action instead: "stay",
+    its own Q-map cell with its own position as the goal (decision D1b). The
+    mask is never empty, so the learning target's max over legal next actions
+    is always defined, and staying is what MAPPO's decoding and the classical
+    planners do in the same situation.
     """
     shape = session.gt_map.shape
     mask = np.zeros((session.num_agents, side, side), np.float32)
@@ -52,7 +58,13 @@ def frontier_qmap(session, side=SIDE):
     scale = np.asarray(shape, float) / side
     for agent in range(session.num_agents):
         best = {}
-        for target in session.frontier_targets(agent):
+        targets = session.frontier_targets(agent)
+        if not targets:
+            here = tuple(int(value) for value in session.agent_pos[agent])
+            mask[agent][qmap_cell(here, shape, side)] = 1
+            goal[agent][qmap_cell(here, shape, side)] = here
+            continue
+        for target in targets:
             row, column = qmap_cell(target, shape, side)
             centre = (np.asarray([row, column]) + 0.5) * scale - 0.5
             key = (float(np.sum((np.asarray(target) - centre) ** 2)), target)
@@ -62,3 +74,26 @@ def frontier_qmap(session, side=SIDE):
             mask[agent, row, column] = 1
             goal[agent, row, column] = target
     return mask, goal
+
+
+def masked_argmax(q_values, mask):
+    """Best legal flat action per robot: q_values and mask are [agents, side, side]."""
+    legal = np.asarray(mask).reshape(len(mask), -1) > 0
+    if not np.all(legal.any(axis=1)):
+        raise ValueError("a robot has no legal action")
+    return np.where(legal, np.asarray(q_values, float).reshape(len(mask), -1), -np.inf).argmax(axis=1)
+
+
+def request(actions, observation, side=SIDE):
+    """Session request for flat actions [agents]; refuses an illegal action.
+
+    Communication action 0 is SILENCE: DQN v1 never transmits, which is
+    valid under the "perfect" and "none" modes only (docs/dqn/plan.md).
+    """
+    goals = []
+    for agent, action in enumerate(actions):
+        cell = action_cell(action, side)
+        if observation["frontier_mask"][agent][cell] != 1:
+            raise ValueError("illegal action {} for robot {}".format(action, agent))
+        goals.append(observation["frontier_goal"][agent][cell])
+    return {"motion_goals": np.asarray(goals, np.int64), "comm_actions": np.zeros(len(goals), np.int64)}
