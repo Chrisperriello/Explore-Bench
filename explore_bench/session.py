@@ -9,6 +9,7 @@ import math
 from collections import deque
 from types import SimpleNamespace
 
+import cv2
 import numpy as np
 from PIL import Image
 
@@ -161,7 +162,14 @@ class Session(GridEnv):
         return info
 
     def observation(self):
-        return self.builder.build(self._info())
+        actor, critic, available = self.builder.build(self._info())
+        if "dqn" in self.spec:
+            # DQN's legal actions (docs/dqn/plan.md, D1). Only DQN
+            # configurations get these keys, so MAPPO's observation and its
+            # checkpoints' observation contract are unchanged.
+            from .dqn import frontier_qmap
+            actor["frontier_mask"], actor["frontier_goal"] = frontier_qmap(self)
+        return actor, critic, available
 
     def _navigation_map(self, agent_id):
         """Return the grid A* may route through for ``agent_id``.
@@ -206,6 +214,27 @@ class Session(GridEnv):
             return list(reversed(path))
         except KeyError:
             return [start]
+
+    def frontier_targets(self, agent):
+        """Frontier goals that would move ``agent`` now: exactly the candidates
+        for which ``len(self.route(agent, candidate)) > 1``.
+
+        decode_coordinates tests candidates one A* search at a time; a mask
+        over every frontier needs all of them each step, so reachability is
+        one connected-component pass instead. It is equivalent to route():
+        A* blocks only OCCUPIED cells, and a diagonal step is allowed only when
+        both side cells are FREE, so anything A* reaches is also reachable by
+        4-connected steps through non-OCCUPIED cells, and vice versa.
+        """
+        navigation = self._navigation_map(agent)
+        start = tuple(self.agent_pos[agent])
+        passable = (navigation != OCCUPIED).astype(np.uint8)
+        passable[start] = 1  # A* expands its start cell whatever it holds
+        _, labels = cv2.connectedComponents(passable, connectivity=4)
+        region = labels == labels[start]
+        return [tuple(int(value) for value in cell)
+                for cell in frontier_candidates(self.communication_broker.belief_maps[agent])
+                if tuple(cell) != start and navigation[tuple(cell)] == FREE and region[tuple(cell)]]
 
     def decode_coordinates(self, coordinates):
         """Snap normalized coordinates to reachable belief-frontier goals."""

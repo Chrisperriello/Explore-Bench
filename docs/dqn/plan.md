@@ -48,4 +48,20 @@ learning algorithm and the discrete action it needs, nothing else.
 | ID | Question | Choice | Why | Date |
 |---|---|---|---|---|
 | D0 | Score every frontier, or a fixed list? | Q-map over a 64 x 64 grid, illegal cells masked | A fixed output needs a fixed meaning; a location keeps one, frontier #k does not. Every frontier gets a score. | 2026-11-12 |
-| D1 | Which cells are legal, where the mask comes from, what request is sent | open | | |
+| D1 | Which cells are legal, where the mask comes from, what request is sent | Legal = Q-map cells holding a reachable frontier target; the session computes the mask from the full-resolution belief; the action is sent as that target's exact cell (`motion_goals`) | One action per real choice; the blurred 64 x 64 channels would allow cells with no frontier; Q-learning must credit the executed action, and snapping to a neighbour's frontier would break that | 2026-11-12 |
+| D1b | What a robot does when it has no reachable frontier | open | | |
+
+### D1 implementation notes
+
+- `Session.frontier_targets` (explore_bench/session.py) returns exactly the
+  candidates `route()` can move to, from one connected-component pass instead
+  of one A* search per candidate. Tested against `route()` in both
+  navigation modes, including the no-corner-cutting rule (tests/test_dqn.py).
+- `frontier_qmap` (explore_bench/dqn.py) adds `frontier_mask` [2, 64, 64] and
+  `frontier_goal` [2, 64, 64, 2] to the actor observation, only when the
+  configuration has a `dqn` key.
+- Probe, random controller, 300 steps on room_1, square_loop and
+  rooms_v1_seed_1: 2.0-5.0 legal actions per robot and step (of 4,096); two
+  targets shared a Q-map cell 2 times in 6,971 (the nearest-to-centre rule
+  almost never matters); no empty masks; about 5 ms per step for the mask
+  against 160-220 ms for the whole step.

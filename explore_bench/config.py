@@ -94,15 +94,21 @@ def map_path(name):
 # contract (explore_bench/scoring.py) so legacy and belief runs never mix.
 NAVIGATION = ("belief", "ground_truth")
 
+# DQN settings (docs/dqn/plan.md). Optional for the same digest reason as
+# "navigation": absent in every MAPPO configuration, so their digests are
+# unchanged. Its presence makes Session add the legal-action keys to the
+# actor observation. Keys are added as each stage's decision is made.
+DQN_KEYS = frozenset()
+
 
 def configuration(path=None):
     value = copy.deepcopy(DEFAULT)
     if path is not None:
         with Path(path).open(encoding="utf-8") as handle:
             supplied = json.load(handle)
-        # "navigation" is the one accepted key outside DEFAULT (see NAVIGATION
-        # above); any other unknown key is still a typo and is rejected.
-        unknown = set(supplied) - set(value) - {"navigation"}
+        # "navigation" and "dqn" are the accepted keys outside DEFAULT (see
+        # NAVIGATION and DQN_KEYS above); any other unknown key is a typo.
+        unknown = set(supplied) - set(value) - {"navigation", "dqn"}
         if unknown:
             raise ValueError("unknown experiment keys: {}".format(sorted(unknown)))
         for key, item in supplied.items():
@@ -121,6 +127,8 @@ def configuration(path=None):
     # belief routing in Session._navigation_map and label the run wrongly.
     if value.get("navigation", "belief") not in NAVIGATION:
         raise ValueError("navigation must be one of {}".format(NAVIGATION))
+    if "dqn" in value and (not isinstance(value["dqn"], dict) or set(value["dqn"]) - DQN_KEYS):
+        raise ValueError("dqn must be an object with keys from {}".format(sorted(DQN_KEYS)))
     for key in ("resolution", "sensor_range"):
         if not math.isfinite(value[key]) or value[key] <= 0:
             raise ValueError(key + " must be positive and finite")
