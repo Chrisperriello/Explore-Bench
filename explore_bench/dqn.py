@@ -11,8 +11,129 @@ cell ("motion_goals"), so the action Q-learning credits is the one executed.
 """
 
 import numpy as np
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 
 SIDE = 64  # matches the 64 x 64 observation channels (ObservationBuilder)
+
+
+def _orthogonal(layer, gain):
+    """Initialize a learned layer like MAPPO: orthogonal weights, zero bias."""
+    nn.init.orthogonal_(layer.weight, gain=gain)
+    if layer.bias is not None:
+        nn.init.zeros_(layer.bias)
+    return layer
+
+
+class SpatialBlock(nn.Module):
+    """Two 3 x 3 convolution/ReLU pairs that preserve the grid dimensions."""
+
+    def __init__(self, input_channels, output_channels):
+        super().__init__()
+        gain = np.sqrt(2.0)
+        self.layers = nn.Sequential(
+            _orthogonal(nn.Conv2d(input_channels, output_channels, 3, padding=1), gain),
+            nn.ReLU(),
+            _orthogonal(nn.Conv2d(output_channels, output_channels, 3, padding=1), gain),
+            nn.ReLU(),
+        )
+
+    def forward(self, values):
+        return self.layers(values)
+
+
+class QNetwork(nn.Module):
+    """Shared encoder-decoder that returns one raw Q-value per 64 x 64 cell.
+
+    ``maps`` is [batch, 8, 64, 64]. ``other`` is [batch, 5K + 8 + N], the
+    complete non-map actor input prepared by :func:`actor_inputs`. The batch
+    may contain different robots and replay samples; no operation mixes rows.
+    """
+
+    def __init__(self, non_map_size):
+        super().__init__()
+        if not isinstance(non_map_size, int) or non_map_size < 1:
+            raise ValueError("non_map_size must be a positive integer")
+        self.non_map_size = non_map_size
+        self.pool = nn.MaxPool2d(2)
+        self.encoders = nn.ModuleList([
+            SpatialBlock(8, 32),
+            SpatialBlock(32, 64),
+            SpatialBlock(64, 128),
+            SpatialBlock(128, 128),
+            SpatialBlock(128, 128),
+        ])
+        self.summary_linear = _orthogonal(nn.Linear(non_map_size, 128), np.sqrt(2.0))
+        self.summary_norm = nn.LayerNorm(128)
+        self.fusion = SpatialBlock(256, 128)
+        self.decoders = nn.ModuleList([
+            SpatialBlock(256, 128),
+            SpatialBlock(256, 128),
+            SpatialBlock(192, 64),
+            SpatialBlock(96, 32),
+        ])
+        self.q_output = _orthogonal(nn.Conv2d(32, 1, 1), 1.0)
+
+    @staticmethod
+    def _double(values):
+        return F.interpolate(values, scale_factor=2, mode="bilinear", align_corners=False)
+
+    def forward(self, maps, other):
+        if maps.ndim != 4 or tuple(maps.shape[1:]) != (8, SIDE, SIDE):
+            raise ValueError("maps must have shape [batch, 8, 64, 64]")
+        if other.ndim != 2 or other.shape != (len(maps), self.non_map_size):
+            raise ValueError("other must have shape [batch, non_map_size]")
+        if maps.device != other.device:
+            raise ValueError("maps and other must be on the same device")
+        maps = maps.to(dtype=torch.float32)
+        other = other.to(dtype=torch.float32)
+
+        skips = []
+        encoded = maps
+        for index, encoder in enumerate(self.encoders):
+            encoded = encoder(encoded)
+            skips.append(encoded)
+            if index < len(self.encoders) - 1:
+                encoded = self.pool(encoded)
+
+        summary = self.summary_norm(F.relu(self.summary_linear(other)))
+        summary = summary[:, :, None, None].expand(-1, -1, 4, 4)
+        decoded = self.fusion(torch.cat((encoded, summary), dim=1))
+        for decoder, skip in zip(self.decoders, reversed(skips[:-1])):
+            decoded = self._double(decoded)
+            decoded = decoder(torch.cat((decoded, skip), dim=1))
+        return self.q_output(decoded).squeeze(1)
+
+
+def actor_inputs(observation):
+    """Separate complete MAPPO actor inputs into maps and non-map values.
+
+    Input arrays have one leading batch dimension (robots during inference,
+    replay samples during learning). Returns float32 arrays [batch, 8, 64, 64]
+    and [batch, 5K + 8 + N], where K is the number of radio patch candidates
+    and N the length of the robot identity vector.
+
+    Ordering matches MAPPO's MIXBase: team maps before private maps, then
+    flattened patch candidates, radio status, and identity in the other branch.
+    Explicit keys keep the frontier mask, goal lookup, and privileged critic
+    observations out of the network (decisions D2a and D2d).
+    """
+    team = np.asarray(observation["global_merge_obs"], dtype=np.float32)
+    own = np.asarray(observation["global_obs"], dtype=np.float32)
+    if team.ndim != 4 or team.shape[1:] != (4, SIDE, SIDE) or own.shape != team.shape:
+        raise ValueError("actor maps must both have shape [batch, 4, 64, 64]")
+    batch = len(team)
+    if batch == 0:
+        raise ValueError("actor input batch must not be empty")
+    candidates = np.asarray(observation["comm_candidates"], dtype=np.float32)
+    status = np.asarray(observation["comm_status"], dtype=np.float32)
+    identity = np.asarray(observation["vector"], dtype=np.float32)
+    if (candidates.ndim != 3 or candidates.shape[0] != batch or candidates.shape[2] != 5
+            or status.shape != (batch, 8) or identity.ndim != 2 or len(identity) != batch):
+        raise ValueError("actor non-map inputs must have shapes [batch, K, 5], [batch, 8], [batch, N]")
+    return (np.concatenate((team, own), axis=1),
+            np.concatenate((candidates.reshape(batch, -1), status, identity), axis=1))
 
 
 def action_cell(action, side):

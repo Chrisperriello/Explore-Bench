@@ -8,7 +8,7 @@ import pytest
 from PIL import Image
 
 from explore_bench.config import DATASETS, configuration, task_for
-from explore_bench.dqn import action_cell, action_index, frontier_qmap, masked_argmax, qmap_cell, request
+from explore_bench.dqn import QNetwork, actor_inputs, action_cell, action_index, frontier_qmap, masked_argmax, qmap_cell, request
 from explore_bench.session import Session, frontier_candidates
 from explore_bench.worlds import TrainingWorld
 from onpolicy.envs.GridEnv.communication import FREE, UNKNOWN
@@ -37,6 +37,109 @@ def make_spec(tmp_path, **extra):
 @pytest.fixture
 def spec(tmp_path):
     return make_spec(tmp_path)
+
+
+@pytest.mark.parametrize("mode,candidates", [("perfect", 4), ("none", 8)])
+def test_complete_actor_inputs_match_mappo_and_exclude_helper_arrays(tmp_path, mode, candidates):
+    import torch
+
+    from explore_bench.mappo import arguments
+    from onpolicy.algorithms.r_mappo.algorithm.r_actor_critic import R_Actor
+
+    spec = make_spec(tmp_path, dqn={}, communication={
+        "mode": mode, "candidate_count": candidates, "tile_size": 4})
+    session = Session(spec)
+    observation, _, _ = session.reset_task(task_for(spec, spec["maps"]["train"][0], 100001, "fixture"))
+    # Distinct non-map values catch omissions and ordering errors even when
+    # actual radio state happens to be identical across the two robots.
+    observation["comm_candidates"] = np.arange(2 * candidates * 5, dtype=np.float32).reshape(2, candidates, 5)
+    observation["comm_status"] = np.arange(16, dtype=np.float32).reshape(2, 8)
+    actor = R_Actor(arguments(spec), session.observation_space[0], session.action_space[0])
+    tensors = {key: torch.as_tensor(value) for key, value in observation.items()}
+    maps, other = actor_inputs(observation)
+    assert maps.shape == (2, 8, 64, 64)
+    assert other.shape == (2, 5 * candidates + 8 + 2)
+    assert maps.dtype == other.dtype == np.float32
+    np.testing.assert_array_equal(maps, actor.base._build_cnn_input(tensors).numpy())
+    np.testing.assert_array_equal(other, actor.base._build_mlp_input(tensors).numpy())
+    # The input boundary is an explicit allowlist, even if the caller mixes
+    # actor helpers or privileged critic data into the same dictionary.
+    observation["frontier_mask"][:] = np.nan
+    observation["frontier_goal"][:] = -999
+    observation["agent_beliefs"] = np.full((2, 4, 64, 64), np.nan)
+    after_maps, after_other = actor_inputs(observation)
+    np.testing.assert_array_equal(maps, after_maps)
+    np.testing.assert_array_equal(other, after_other)
+    # Processing one robot's additional values never alters the other's row.
+    observation["comm_candidates"][0] += 1
+    changed = actor_inputs(observation)[1]
+    assert np.any(changed[0] != other[0])
+    np.testing.assert_array_equal(changed[1], other[1])
+
+
+def test_actor_inputs_reject_mismatched_robot_batches():
+    observation = {
+        "global_obs": np.zeros((2, 4, 64, 64)),
+        "global_merge_obs": np.zeros((2, 4, 64, 64)),
+        # Without checking this dimension before flattening, a reshape could
+        # silently divide one robot's eight patches between two robots.
+        "comm_candidates": np.zeros((1, 8, 5)),
+        "comm_status": np.zeros((2, 8)),
+        "vector": np.eye(2),
+    }
+    with pytest.raises(ValueError, match="non-map inputs"):
+        actor_inputs(observation)
+
+
+def test_wider_q_network_shape_parameter_count_and_gradients():
+    import torch
+
+    network = QNetwork(non_map_size=50)
+    assert sum(parameter.numel() for parameter in network.parameters()) == 2_397_985
+    maps = torch.randn(3, 8, 64, 64, requires_grad=True)
+    other = torch.randn(3, 50, requires_grad=True)
+    q_values = network(maps, other)
+    assert q_values.shape == (3, 64, 64)
+    assert torch.isfinite(q_values).all()
+    q_values.sum().backward()
+    assert maps.grad is not None and torch.any(maps.grad != 0)
+    assert other.grad is not None and torch.any(other.grad != 0)
+    assert network.q_output.weight.grad is not None
+
+
+def test_q_network_keeps_samples_separate_and_outputs_raw_values():
+    import torch
+
+    torch.manual_seed(0)
+    network = QNetwork(non_map_size=50).eval()
+    maps = torch.randn(2, 8, 64, 64)
+    other = torch.randn(2, 50)
+    with torch.no_grad():
+        before = network(maps, other)
+        maps[0] += 3
+        other[0] -= 2
+        after = network(maps, other)
+    assert torch.any(after[0] != before[0])
+    torch.testing.assert_close(after[1], before[1], rtol=0, atol=0)
+
+    # The last layer is linear: Q-values are reward estimates, not bounded
+    # probabilities. A known bias must pass through unchanged.
+    with torch.no_grad():
+        network.q_output.weight.zero_()
+        network.q_output.bias.fill_(-2.5)
+        raw = network(maps, other)
+    torch.testing.assert_close(raw, torch.full_like(raw, -2.5))
+
+
+@pytest.mark.parametrize("maps_shape,other_shape", [
+    ((2, 7, 64, 64), (2, 50)),
+    ((2, 8, 64, 64), (2, 49)),
+])
+def test_q_network_rejects_wrong_input_shapes(maps_shape, other_shape):
+    import torch
+
+    with pytest.raises(ValueError):
+        QNetwork(50)(torch.zeros(maps_shape), torch.zeros(other_shape))
 
 
 def test_action_index_round_trips():
